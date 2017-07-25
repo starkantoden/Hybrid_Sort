@@ -85,4 +85,3 @@ inline size_t cacheSizeInByte3()
     //std::cout << "cache size selected: " << size << std::endl;
     return size;
 }
-
