@@ -1,0 +1,2318 @@
+以下结果在opensuse kernel-desktop中得到：
+
+~/cuda-workspace/hybrid_sort $ cd Release/
+~/cuda-workspace/hybrid_sort/Release $ ./hybrid_sort 
+8
+67108864 1023
+Using device 0: GeForce GTX 765M (PTX version 300, SM300, 4 SMs, 2017 free / 2047 total MB physmem, ECC off)
+cache size selected: 32768
+selected block size on cpu: 2048
+ 0.803887s wall, 0.830000s user + 0.000000s system = 0.830000s CPU (103.2%)
+cache size selected: 32768
+cache factor is: 1block length is: 8192 average time for merge: 0.916913
+cache size selected: 32768
+cache factor is: 2block length is: 4096 average time for merge: 0.825981
+cache size selected: 32768
+cache factor is: 4block length is: 2048 average time for merge: 0.743128
+cache size selected: 32768
+cache factor is: 8block length is: 1024 average time for merge: 0.654696
+~/cuda-workspace/hybrid_sort/Release $ ./hybrid_sort 
+8
+67108864 1023
+Using device 0: GeForce GTX 765M (PTX version 300, SM300, 4 SMs, 2017 free / 2047 total MB physmem, ECC off)
+cache size selected: 32768
+selected block size on cpu: 2048
+ 0.805790s wall, 0.850000s user + 0.000000s system = 0.850000s CPU (105.5%)
+cache size selected: 32768
+cache factor is: 1block length is: 8192 average time for merge: 0.920401
+cache size selected: 32768
+cache factor is: 2block length is: 4096 average time for merge: 0.829736
+cache size selected: 32768
+cache factor is: 4block length is: 2048 average time for merge: 0.741284
+cache size selected: 32768
+cache factor is: 8block length is: 1024 average time for merge: 0.656434
+cache size selected: 32768
+cache factor is: 16block length is: 512 average time for merge: 0.570493
+cache size selected: 32768
+cache factor is: 32block length is: 256 average time for merge: 0.482025
+~/cuda-workspace/hybrid_sort/Release $ 
+以上结果测试的是串行地运行merge block算法，不同的是，block的大小。结果表明，对merge算法影响的主要因素是block的大小，而不是block的数量，所以应考虑保证算法其他部分性能的前提下，使用较小的block大小，而且在multiway算法之后，使用比开头更小的block大小。两者的不同应该会提高算法性能。
+8
+67108864 1023
+Using device 0: GeForce GTX 765M (PTX version 300, SM300, 4 SMs, 2017 free / 2047 total MB physmem, ECC off)
+cache size selected: 32768
+selected block size on cpu: 2048
+ 0.801105s wall, 0.850000s user + 0.000000s system = 0.850000s CPU (106.1%)
+cache size selected: 32768
+cache factor is: 1block length is: 8192 average time for merge: 2.08887
+cache size selected: 32768
+cache factor is: 2block length is: 4096 average time for merge: 2.08289
+cache size selected: 32768
+cache factor is: 4block length is: 2048 average time for merge: 2.08202
+cache size selected: 32768
+cache factor is: 8block length is: 1024 average time for merge: 2.09634
+cache size selected: 32768
+cache factor is: 16block length is: 512 average time for merge: 2.13182
+cache size selected: 32768
+cache factor is: 32block length is: 256 average time for merge: 2.15656
+以上是merge sort加上block间合并两个部分的结果。相减之后得到block间合并的运行时间分别是：1.168469，1.253154,1.340736,1.439906,1.561327,1.674535。意料之中的是，block数量增多，则block之间merge所需的时间变长。按目前串行运行结果来看，cache factor为4是两者权衡后，性能最优值。
+以下是缓存内merge sort在不同的分组大小、以及不同的block大小情况下的运行情况。从结果看出，block大小对缓存内排序的影响在并行状态下减弱，但仍然维持着减小block大小则降低计算时间的趋势。在chunk的大小太大致使线程数量未到达CPU最大线程数量前，chunk的大小对排序的时间影响非常大，但chunk小到足够数量后，如果获得的分组是CPU最大线程数量的整数倍，则对可达到最高性能，此时chunk大小对排序的时间影响就很低了。说明可以用比较小的chunk大小来进行排序。
+8
+67108864 1023
+Using device 0: GeForce GTX 765M (PTX version 300, SM300, 4 SMs, 2017 free / 2047 total MB physmem, ECC off)
+cache size selected: 32768
+selected block size on cpu: 2048
+ 0.795491s wall, 0.830000s user + 0.000000s system = 0.830000s CPU (104.3%)
+cache size selected: 32768
+cache factor is: 1 block length is: 8192
+chunk size is: 67108864 data length is: 67108864 average time for merge: 0.91912
+chunk size is: 33554432 data length is: 67108864 average time for merge: 0.486693
+chunk size is: 16777216 data length is: 50331648 average time for merge: 0.24775
+chunk size is: 16777216 data length is: 67108864 average time for merge: 0.256977
+chunk size is: 8388608 data length is: 41943040 average time for merge: 0.174309
+chunk size is: 8388608 data length is: 50331648 average time for merge: 0.186918
+chunk size is: 8388608 data length is: 58720256 average time for merge: 0.203507
+chunk size is: 8388608 data length is: 67108864 average time for merge: 0.227964
+chunk size is: 4194304 data length is: 37748736 average time for merge: 0.165601
+chunk size is: 4194304 data length is: 41943040 average time for merge: 0.170621
+chunk size is: 4194304 data length is: 46137344 average time for merge: 0.172789
+chunk size is: 4194304 data length is: 50331648 average time for merge: 0.180197
+chunk size is: 4194304 data length is: 54525952 average time for merge: 0.199743
+chunk size is: 4194304 data length is: 58720256 average time for merge: 0.210536
+chunk size is: 4194304 data length is: 62914560 average time for merge: 0.219386
+chunk size is: 4194304 data length is: 67108864 average time for merge: 0.232904
+cache size selected: 32768
+cache factor is: 2 block length is: 4096
+chunk size is: 67108864 data length is: 67108864 average time for merge: 0.83019
+chunk size is: 33554432 data length is: 67108864 average time for merge: 0.442707
+chunk size is: 16777216 data length is: 50331648 average time for merge: 0.225554
+chunk size is: 16777216 data length is: 67108864 average time for merge: 0.234255
+chunk size is: 8388608 data length is: 41943040 average time for merge: 0.15889
+chunk size is: 8388608 data length is: 50331648 average time for merge: 0.17038
+chunk size is: 8388608 data length is: 58720256 average time for merge: 0.187008
+chunk size is: 8388608 data length is: 67108864 average time for merge: 0.211858
+chunk size is: 4194304 data length is: 37748736 average time for merge: 0.148872
+chunk size is: 4194304 data length is: 41943040 average time for merge: 0.153968
+chunk size is: 4194304 data length is: 46137344 average time for merge: 0.157522
+chunk size is: 4194304 data length is: 50331648 average time for merge: 0.164075
+chunk size is: 4194304 data length is: 54525952 average time for merge: 0.182631
+chunk size is: 4194304 data length is: 58720256 average time for merge: 0.191836
+chunk size is: 4194304 data length is: 62914560 average time for merge: 0.202545
+chunk size is: 4194304 data length is: 67108864 average time for merge: 0.219357
+cache size selected: 32768
+cache factor is: 4 block length is: 2048
+chunk size is: 67108864 data length is: 67108864 average time for merge: 0.747548
+chunk size is: 33554432 data length is: 67108864 average time for merge: 0.398258
+chunk size is: 16777216 data length is: 50331648 average time for merge: 0.205362
+chunk size is: 16777216 data length is: 67108864 average time for merge: 0.212345
+chunk size is: 8388608 data length is: 41943040 average time for merge: 0.141225
+chunk size is: 8388608 data length is: 50331648 average time for merge: 0.154646
+chunk size is: 8388608 data length is: 58720256 average time for merge: 0.167641
+chunk size is: 8388608 data length is: 67108864 average time for merge: 0.18799
+chunk size is: 4194304 data length is: 37748736 average time for merge: 0.13287
+chunk size is: 4194304 data length is: 41943040 average time for merge: 0.139645
+chunk size is: 4194304 data length is: 46137344 average time for merge: 0.143338
+chunk size is: 4194304 data length is: 50331648 average time for merge: 0.143889
+chunk size is: 4194304 data length is: 54525952 average time for merge: 0.162715
+chunk size is: 4194304 data length is: 58720256 average time for merge: 0.171688
+chunk size is: 4194304 data length is: 62914560 average time for merge: 0.178705
+chunk size is: 4194304 data length is: 67108864 average time for merge: 0.189666
+cache size selected: 32768
+cache factor is: 8 block length is: 1024
+chunk size is: 67108864 data length is: 67108864 average time for merge: 0.656252
+chunk size is: 33554432 data length is: 67108864 average time for merge: 0.358028
+chunk size is: 16777216 data length is: 50331648 average time for merge: 0.184249
+chunk size is: 16777216 data length is: 67108864 average time for merge: 0.189341
+chunk size is: 8388608 data length is: 41943040 average time for merge: 0.125875
+chunk size is: 8388608 data length is: 50331648 average time for merge: 0.135041
+chunk size is: 8388608 data length is: 58720256 average time for merge: 0.147421
+chunk size is: 8388608 data length is: 67108864 average time for merge: 0.169079
+chunk size is: 4194304 data length is: 37748736 average time for merge: 0.117914
+chunk size is: 4194304 data length is: 41943040 average time for merge: 0.121668
+chunk size is: 4194304 data length is: 46137344 average time for merge: 0.123751
+chunk size is: 4194304 data length is: 50331648 average time for merge: 0.129352
+chunk size is: 4194304 data length is: 54525952 average time for merge: 0.145142
+chunk size is: 4194304 data length is: 58720256 average time for merge: 0.149592
+chunk size is: 4194304 data length is: 62914560 average time for merge: 0.160814
+chunk size is: 4194304 data length is: 67108864 average time for merge: 0.166354
+cache size selected: 32768
+cache factor is: 16 block length is: 512
+chunk size is: 67108864 data length is: 67108864 average time for merge: 0.570701
+chunk size is: 33554432 data length is: 67108864 average time for merge: 0.310276
+chunk size is: 16777216 data length is: 50331648 average time for merge: 0.160818
+chunk size is: 16777216 data length is: 67108864 average time for merge: 0.166627
+chunk size is: 8388608 data length is: 41943040 average time for merge: 0.110389
+chunk size is: 8388608 data length is: 50331648 average time for merge: 0.119363
+chunk size is: 8388608 data length is: 58720256 average time for merge: 0.128531
+chunk size is: 8388608 data length is: 67108864 average time for merge: 0.14439
+chunk size is: 4194304 data length is: 37748736 average time for merge: 0.103421
+chunk size is: 4194304 data length is: 41943040 average time for merge: 0.108355
+chunk size is: 4194304 data length is: 46137344 average time for merge: 0.109315
+chunk size is: 4194304 data length is: 50331648 average time for merge: 0.113116
+chunk size is: 4194304 data length is: 54525952 average time for merge: 0.123825
+chunk size is: 4194304 data length is: 58720256 average time for merge: 0.130646
+chunk size is: 4194304 data length is: 62914560 average time for merge: 0.138185
+chunk size is: 4194304 data length is: 67108864 average time for merge: 0.144975
+cache size selected: 32768
+cache factor is: 32 block length is: 256
+chunk size is: 67108864 data length is: 67108864 average time for merge: 0.487251
+chunk size is: 33554432 data length is: 67108864 average time for merge: 0.265322
+chunk size is: 16777216 data length is: 50331648 average time for merge: 0.1358
+chunk size is: 16777216 data length is: 67108864 average time for merge: 0.147134
+chunk size is: 8388608 data length is: 41943040 average time for merge: 0.0945607
+chunk size is: 8388608 data length is: 50331648 average time for merge: 0.10151
+chunk size is: 8388608 data length is: 58720256 average time for merge: 0.111193
+chunk size is: 8388608 data length is: 67108864 average time for merge: 0.120799
+chunk size is: 4194304 data length is: 37748736 average time for merge: 0.0875762
+chunk size is: 4194304 data length is: 41943040 average time for merge: 0.0912467
+chunk size is: 4194304 data length is: 46137344 average time for merge: 0.0945104
+chunk size is: 4194304 data length is: 50331648 average time for merge: 0.0953401
+chunk size is: 4194304 data length is: 54525952 average time for merge: 0.104437
+chunk size is: 4194304 data length is: 58720256 average time for merge: 0.111081
+chunk size is: 4194304 data length is: 62914560 average time for merge: 0.115701
+chunk size is: 4194304 data length is: 67108864 average time for merge: 0.123957
+cache size selected: 32768
+cache factor is: 64 block length is: 128
+chunk size is: 67108864 data length is: 67108864 average time for merge: 0.387165
+chunk size is: 33554432 data length is: 67108864 average time for merge: 0.212687
+chunk size is: 16777216 data length is: 50331648 average time for merge: 0.109799
+chunk size is: 16777216 data length is: 67108864 average time for merge: 0.11868
+chunk size is: 8388608 data length is: 41943040 average time for merge: 0.0766825
+chunk size is: 8388608 data length is: 50331648 average time for merge: 0.0822685
+chunk size is: 8388608 data length is: 58720256 average time for merge: 0.0897224
+chunk size is: 8388608 data length is: 67108864 average time for merge: 0.0964838
+chunk size is: 4194304 data length is: 37748736 average time for merge: 0.0707252
+chunk size is: 4194304 data length is: 41943040 average time for merge: 0.0751364
+chunk size is: 4194304 data length is: 46137344 average time for merge: 0.0758591
+chunk size is: 4194304 data length is: 50331648 average time for merge: 0.0774116
+chunk size is: 4194304 data length is: 54525952 average time for merge: 0.0851278
+chunk size is: 4194304 data length is: 58720256 average time for merge: 0.0898697
+chunk size is: 4194304 data length is: 62914560 average time for merge: 0.0948851
+chunk size is: 4194304 data length is: 67108864 average time for merge: 0.0999488
+以下是缓存内排序加上合并的过程。可以看出，chunk的大小也会对合并产生影响，但线程数量对合并的影响并不太规律，中间有一段没有大的变化，但chunk大小变小对合并影响的趋势是时间减少。但block大小的合并的影响产生的仍然是反作用，block变小，合并的时间将变长。总的时间竟然没有太大变化，性能最高的时候竟然是block为最大值、chunk为最小值的情况。也许继续降低chunk大小才能提高这两个部分的综合性能。
+~/cuda-workspace/hybrid_sort/Release $ ./hybrid_sort 
+8
+67108864 1023
+Using device 0: GeForce GTX 765M (PTX version 300, SM300, 4 SMs, 2017 free / 2047 total MB physmem, ECC off)
+cache size selected: 32768
+selected block size on cpu: 2048
+ 0.786732s wall, 0.820000s user + 0.000000s system = 0.820000s CPU (104.2%)
+cache size selected: 32768
+cache factor is: 1 block length is: 8192
+chunk size is: 67108864 data length is: 67108864 average time for merge: 2.09265
+chunk size is: 33554432 data length is: 67108864 average time for merge: 1.05356
+chunk size is: 16777216 data length is: 50331648 average time for merge: 0.588733
+chunk size is: 16777216 data length is: 67108864 average time for merge: 0.701094
+chunk size is: 8388608 data length is: 41943040 average time for merge: 0.410754
+chunk size is: 8388608 data length is: 50331648 average time for merge: 0.472931
+chunk size is: 8388608 data length is: 58720256 average time for merge: 0.548714
+chunk size is: 8388608 data length is: 67108864 average time for merge: 0.631338
+chunk size is: 4194304 data length is: 37748736 average time for merge: 0.386273
+chunk size is: 4194304 data length is: 41943040 average time for merge: 0.399879
+chunk size is: 4194304 data length is: 46137344 average time for merge: 0.420782
+chunk size is: 4194304 data length is: 50331648 average time for merge: 0.4391
+chunk size is: 4194304 data length is: 54525952 average time for merge: 0.473814
+chunk size is: 4194304 data length is: 58720256 average time for merge: 0.500381
+chunk size is: 4194304 data length is: 62914560 average time for merge: 0.538567
+chunk size is: 4194304 data length is: 67108864 average time for merge: 0.580517
+cache size selected: 32768
+cache factor is: 2 block length is: 4096
+chunk size is: 67108864 data length is: 67108864 average time for merge: 2.0918
+chunk size is: 33554432 data length is: 67108864 average time for merge: 1.05622
+chunk size is: 16777216 data length is: 50331648 average time for merge: 0.59736
+chunk size is: 16777216 data length is: 67108864 average time for merge: 0.719049
+chunk size is: 8388608 data length is: 41943040 average time for merge: 0.422236
+chunk size is: 8388608 data length is: 50331648 average time for merge: 0.491487
+chunk size is: 8388608 data length is: 58720256 average time for merge: 0.552852
+chunk size is: 8388608 data length is: 67108864 average time for merge: 0.66002
+chunk size is: 4194304 data length is: 37748736 average time for merge: 0.399904
+chunk size is: 4194304 data length is: 41943040 average time for merge: 0.412146
+chunk size is: 4194304 data length is: 46137344 average time for merge: 0.434303
+chunk size is: 4194304 data length is: 50331648 average time for merge: 0.458178
+chunk size is: 4194304 data length is: 54525952 average time for merge: 0.49662
+chunk size is: 4194304 data length is: 58720256 average time for merge: 0.528176
+chunk size is: 4194304 data length is: 62914560 average time for merge: 0.562708
+chunk size is: 4194304 data length is: 67108864 average time for merge: 0.603823
+cache size selected: 32768
+cache factor is: 4 block length is: 2048
+chunk size is: 67108864 data length is: 67108864 average time for merge: 2.07545
+chunk size is: 33554432 data length is: 67108864 average time for merge: 1.03659
+chunk size is: 16777216 data length is: 50331648 average time for merge: 0.596902
+chunk size is: 16777216 data length is: 67108864 average time for merge: 0.718368
+chunk size is: 8388608 data length is: 41943040 average time for merge: 0.425974
+chunk size is: 8388608 data length is: 50331648 average time for merge: 0.490601
+chunk size is: 8388608 data length is: 58720256 average time for merge: 0.572045
+chunk size is: 8388608 data length is: 67108864 average time for merge: 0.655591
+chunk size is: 4194304 data length is: 37748736 average time for merge: 0.407455
+chunk size is: 4194304 data length is: 41943040 average time for merge: 0.424598
+chunk size is: 4194304 data length is: 46137344 average time for merge: 0.445244
+chunk size is: 4194304 data length is: 50331648 average time for merge: 0.475201
+chunk size is: 4194304 data length is: 54525952 average time for merge: 0.514222
+chunk size is: 4194304 data length is: 58720256 average time for merge: 0.544235
+chunk size is: 4194304 data length is: 62914560 average time for merge: 0.58062
+chunk size is: 4194304 data length is: 67108864 average time for merge: 0.621772
+cache size selected: 32768
+cache factor is: 8 block length is: 1024
+chunk size is: 67108864 data length is: 67108864 average time for merge: 2.0898
+chunk size is: 33554432 data length is: 67108864 average time for merge: 1.05147
+chunk size is: 16777216 data length is: 50331648 average time for merge: 0.605295
+chunk size is: 16777216 data length is: 67108864 average time for merge: 0.734926
+chunk size is: 8388608 data length is: 41943040 average time for merge: 0.437639
+chunk size is: 8388608 data length is: 50331648 average time for merge: 0.506575
+chunk size is: 8388608 data length is: 58720256 average time for merge: 0.589041
+chunk size is: 8388608 data length is: 67108864 average time for merge: 0.691027
+chunk size is: 4194304 data length is: 37748736 average time for merge: 0.422249
+chunk size is: 4194304 data length is: 41943040 average time for merge: 0.433473
+chunk size is: 4194304 data length is: 46137344 average time for merge: 0.456193
+chunk size is: 4194304 data length is: 50331648 average time for merge: 0.487589
+chunk size is: 4194304 data length is: 54525952 average time for merge: 0.527793
+chunk size is: 4194304 data length is: 58720256 average time for merge: 0.562276
+chunk size is: 4194304 data length is: 62914560 average time for merge: 0.599604
+chunk size is: 4194304 data length is: 67108864 average time for merge: 0.641975
+cache size selected: 32768
+cache factor is: 16 block length is: 512
+chunk size is: 67108864 data length is: 67108864 average time for merge: 2.1304
+chunk size is: 33554432 data length is: 67108864 average time for merge: 1.08524
+chunk size is: 16777216 data length is: 50331648 average time for merge: 0.629332
+chunk size is: 16777216 data length is: 67108864 average time for merge: 0.773615
+chunk size is: 8388608 data length is: 41943040 average time for merge: 0.462019
+chunk size is: 8388608 data length is: 50331648 average time for merge: 0.539963
+chunk size is: 8388608 data length is: 58720256 average time for merge: 0.62904
+chunk size is: 8388608 data length is: 67108864 average time for merge: 0.720721
+chunk size is: 4194304 data length is: 37748736 average time for merge: 0.436158
+chunk size is: 4194304 data length is: 41943040 average time for merge: 0.451007
+chunk size is: 4194304 data length is: 46137344 average time for merge: 0.47729
+chunk size is: 4194304 data length is: 50331648 average time for merge: 0.503452
+chunk size is: 4194304 data length is: 54525952 average time for merge: 0.546306
+chunk size is: 4194304 data length is: 58720256 average time for merge: 0.582017
+chunk size is: 4194304 data length is: 62914560 average time for merge: 0.621248
+chunk size is: 4194304 data length is: 67108864 average time for merge: 0.66347
+cache size selected: 32768
+cache factor is: 32 block length is: 256
+chunk size is: 67108864 data length is: 67108864 average time for merge: 2.1566
+chunk size is: 33554432 data length is: 67108864 average time for merge: 1.09542
+chunk size is: 16777216 data length is: 50331648 average time for merge: 0.639681
+chunk size is: 16777216 data length is: 67108864 average time for merge: 0.793271
+chunk size is: 8388608 data length is: 41943040 average time for merge: 0.475254
+chunk size is: 8388608 data length is: 50331648 average time for merge: 0.554001
+chunk size is: 8388608 data length is: 58720256 average time for merge: 0.648141
+chunk size is: 8388608 data length is: 67108864 average time for merge: 0.745882
+chunk size is: 4194304 data length is: 37748736 average time for merge: 0.451599
+chunk size is: 4194304 data length is: 41943040 average time for merge: 0.464668
+chunk size is: 4194304 data length is: 46137344 average time for merge: 0.487042
+chunk size is: 4194304 data length is: 50331648 average time for merge: 0.520059
+chunk size is: 4194304 data length is: 54525952 average time for merge: 0.563853
+chunk size is: 4194304 data length is: 58720256 average time for merge: 0.603129
+chunk size is: 4194304 data length is: 62914560 average time for merge: 0.644905
+chunk size is: 4194304 data length is: 67108864 average time for merge: 0.686318
+cache size selected: 32768
+cache factor is: 64 block length is: 128
+chunk size is: 67108864 data length is: 67108864 average time for merge: 2.16871
+chunk size is: 33554432 data length is: 67108864 average time for merge: 1.11048
+chunk size is: 16777216 data length is: 50331648 average time for merge: 0.646732
+chunk size is: 16777216 data length is: 67108864 average time for merge: 0.808172
+chunk size is: 8388608 data length is: 41943040 average time for merge: 0.486099
+chunk size is: 8388608 data length is: 50331648 average time for merge: 0.569189
+chunk size is: 8388608 data length is: 58720256 average time for merge: 0.670774
+chunk size is: 8388608 data length is: 67108864 average time for merge: 0.766087
+chunk size is: 4194304 data length is: 37748736 average time for merge: 0.462948
+chunk size is: 4194304 data length is: 41943040 average time for merge: 0.471599
+chunk size is: 4194304 data length is: 46137344 average time for merge: 0.503479
+chunk size is: 4194304 data length is: 50331648 average time for merge: 0.538941
+chunk size is: 4194304 data length is: 54525952 average time for merge: 0.580001
+chunk size is: 4194304 data length is: 58720256 average time for merge: 0.623547
+chunk size is: 4194304 data length is: 62914560 average time for merge: 0.668482
+chunk size is: 4194304 data length is: 67108864 average time for merge: 0.712807
+
+下面是对第二步排序中的multi way merge，即计算quantile数组，并据此进行数据拷贝的过程进行的测试。从结果中发现，chunk和block的大小对multi way merge的运算都有影响，其中chunk大小的影响更为明显，表现为chunk大小太大导致线程数少于最大线程数量时，减小chunk大小会大幅提高multi way merge的性能，而在达到最大线程后，继续降低chunk的大小又会显著地使运算时间加长。由此看出，一味地降低chunk的大小是不可取的。在线程数量未达到最大值时，block大小对性能的影响并不明显，但当chunk持续减少大小后，block减少也会明显降低multi way merge的性能。可以考虑，在chunk大小合适的前提下，使用可变的block大小，在第一阶段为了使得合并的性能提高，需要使用较大一点的block，而在第二阶段，只要最后的merge过程能够有足够的性能提升，可以适当减小multi way merge输出的block大小。
+~/cuda-workspace/hybrid_sort/Release $ ./hybrid_sort 
+8
+67108864 1023
+Using device 0: GeForce GTX 765M (PTX version 300, SM300, 4 SMs, 2017 free / 2047 total MB physmem, ECC off)
+cache size selected: 32768
+selected block size on cpu: 2048
+cache size selected: 32768
+cache factor is: 1 block length is: 8192
+chunk size is: 67108864 average time for merge: 2.05768 for multi way: 0.076606
+chunk size is: 33554432 average time for merge: 1.03715 for multi way: 0.0459809
+chunk size is: 16777216 average time for merge: 0.692317 for multi way: 0.0425379
+chunk size is: 8388608 average time for merge: 0.620033 for multi way: 0.0421687
+chunk size is: 4194304 average time for merge: 0.576575 for multi way: 0.0448253
+chunk size is: 2097152 average time for merge: 0.522828 for multi way: 0.0550891
+chunk size is: 1048576 average time for merge: 0.471611 for multi way: 0.0983638
+cache size selected: 32768
+cache factor is: 2 block length is: 4096
+chunk size is: 67108864 average time for merge: 2.05825 for multi way: 0.0758435
+chunk size is: 33554432 average time for merge: 1.03814 for multi way: 0.0470952
+chunk size is: 16777216 average time for merge: 0.711597 for multi way: 0.0431474
+chunk size is: 8388608 average time for merge: 0.643027 for multi way: 0.0429882
+chunk size is: 4194304 average time for merge: 0.598387 for multi way: 0.0454451
+chunk size is: 2097152 average time for merge: 0.545002 for multi way: 0.0771396
+chunk size is: 1048576 average time for merge: 0.492671 for multi way: 0.155252
+cache size selected: 32768
+cache factor is: 4 block length is: 2048
+chunk size is: 67108864 average time for merge: 2.06221 for multi way: 0.0759497
+chunk size is: 33554432 average time for merge: 1.04802 for multi way: 0.048682
+chunk size is: 16777216 average time for merge: 0.730287 for multi way: 0.0432062
+chunk size is: 8388608 average time for merge: 0.663259 for multi way: 0.0441254
+chunk size is: 4194304 average time for merge: 0.61728 for multi way: 0.0504086
+chunk size is: 2097152 average time for merge: 0.560828 for multi way: 0.100869
+chunk size is: 1048576 average time for merge: 0.506825 for multi way: 0.226741
+cache size selected: 32768
+cache factor is: 8 block length is: 1024
+chunk size is: 67108864 average time for merge: 2.06856 for multi way: 0.0765422
+chunk size is: 33554432 average time for merge: 1.05385 for multi way: 0.0545177
+chunk size is: 16777216 average time for merge: 0.747647 for multi way: 0.0440748
+chunk size is: 8388608 average time for merge: 0.683525 for multi way: 0.0441462
+chunk size is: 4194304 average time for merge: 0.638974 for multi way: 0.0681523
+chunk size is: 2097152 average time for merge: 0.578149 for multi way: 0.168184
+chunk size is: 1048576 average time for merge: 0.530845 for multi way: 0.356954
+cache size selected: 32768
+cache factor is: 16 block length is: 512
+chunk size is: 67108864 average time for merge: 2.09433 for multi way: 0.0778313
+chunk size is: 33554432 average time for merge: 1.05189 for multi way: 0.0538024
+chunk size is: 16777216 average time for merge: 0.749907 for multi way: 0.0409918
+chunk size is: 8388608 average time for merge: 0.684176 for multi way: 0.0481309
+chunk size is: 4194304 average time for merge: 0.647002 for multi way: 0.0939164
+chunk size is: 2097152 average time for merge: 0.600912 for multi way: 0.211201
+chunk size is: 1048576 average time for merge: 0.548108 for multi way: 0.505834
+cache size selected: 32768
+cache factor is: 32 block length is: 256
+chunk size is: 67108864 average time for merge: 2.08852 for multi way: 0.0794089
+chunk size is: 33554432 average time for merge: 1.06319 for multi way: 0.0520707
+chunk size is: 16777216 average time for merge: 0.767624 for multi way: 0.0438199
+chunk size is: 8388608 average time for merge: 0.705063 for multi way: 0.0730891
+chunk size is: 4194304 average time for merge: 0.666322 for multi way: 0.155514
+chunk size is: 2097152 average time for merge: 0.612668 for multi way: 0.406442
+chunk size is: 1048576 average time for merge: 0.579216 for multi way: 0.852891
+cache size selected: 32768
+cache factor is: 64 block length is: 128
+chunk size is: 67108864 average time for merge: 2.14445 for multi way: 0.0872126
+chunk size is: 33554432 average time for merge: 1.09435 for multi way: 0.0623436
+chunk size is: 16777216 average time for merge: 0.800438 for multi way: 0.0586079
+chunk size is: 8388608 average time for merge: 0.750248 for multi way: 0.101817
+chunk size is: 4194304 average time for merge: 0.702751 for multi way: 0.229587
+chunk size is: 2097152 average time for merge: 0.650344 for multi way: 0.521058
+chunk size is: 1048576 average time for merge: 0.60246 for multi way: 1.40526
+
+下面是整个第一和第二阶段的性能测试。和之前的一样，在线程数量达到最大之后，merge sort只受block的影响，所以使用可变的block大小从测试结果来看是可行的，在当前机器上测试的结果是block为512时，线程数为8时性能最优。
+~/cuda-workspace/hybrid_sort/Release $ ./hybrid_sort 
+8
+67108864 1023
+Using device 0: GeForce GTX 765M (PTX version 300, SM300, 4 SMs, 2017 free / 2047 total MB physmem, ECC off)
+cache size selected: 32768
+selected block size on cpu: 2048
+successfully sorted!
+cache size selected: 32768
+cache factor is: 1 block length is: 8192
+chunk size is: 67108864 average time for merge: 2.0759 for multi way: 0.954205
+chunk size is: 33554432 average time for merge: 1.05111 for multi way: 0.515011
+chunk size is: 16777216 average time for merge: 0.697046 for multi way: 0.293023
+chunk size is: 8388608 average time for merge: 0.620012 for multi way: 0.262628
+chunk size is: 4194304 average time for merge: 0.57007 for multi way: 0.266041
+chunk size is: 2097152 average time for merge: 0.522759 for multi way: 0.279818
+chunk size is: 1048576 average time for merge: 0.468054 for multi way: 0.327316
+cache size selected: 32768
+cache factor is: 2 block length is: 4096
+chunk size is: 67108864 average time for merge: 2.05668 for multi way: 0.863459
+chunk size is: 33554432 average time for merge: 1.02891 for multi way: 0.464659
+chunk size is: 16777216 average time for merge: 0.697195 for multi way: 0.262909
+chunk size is: 8388608 average time for merge: 0.633452 for multi way: 0.237818
+chunk size is: 4194304 average time for merge: 0.590525 for multi way: 0.249546
+chunk size is: 2097152 average time for merge: 0.539725 for multi way: 0.281025
+chunk size is: 1048576 average time for merge: 0.493876 for multi way: 0.382417
+cache size selected: 32768
+cache factor is: 4 block length is: 2048
+chunk size is: 67108864 average time for merge: 2.08842 for multi way: 0.791484
+chunk size is: 33554432 average time for merge: 1.05603 for multi way: 0.435722
+chunk size is: 16777216 average time for merge: 0.728837 for multi way: 0.255663
+chunk size is: 8388608 average time for merge: 0.652369 for multi way: 0.220183
+chunk size is: 4194304 average time for merge: 0.609063 for multi way: 0.233492
+chunk size is: 2097152 average time for merge: 0.56105 for multi way: 0.282702
+chunk size is: 1048576 average time for merge: 0.507073 for multi way: 0.402705
+cache size selected: 32768
+cache factor is: 8 block length is: 1024
+chunk size is: 67108864 average time for merge: 2.06845 for multi way: 0.701639
+chunk size is: 33554432 average time for merge: 1.03895 for multi way: 0.388728
+chunk size is: 16777216 average time for merge: 0.732634 for multi way: 0.223842
+chunk size is: 8388608 average time for merge: 0.682579 for multi way: 0.209163
+chunk size is: 4194304 average time for merge: 0.640262 for multi way: 0.241701
+chunk size is: 2097152 average time for merge: 0.583255 for multi way: 0.339769
+chunk size is: 1048576 average time for merge: 0.525844 for multi way: 0.535193
+cache size selected: 32768
+cache factor is: 16 block length is: 512
+chunk size is: 67108864 average time for merge: 2.11396 for multi way: 0.627418
+chunk size is: 33554432 average time for merge: 1.05637 for multi way: 0.35159
+chunk size is: 16777216 average time for merge: 0.752142 for multi way: 0.200458
+chunk size is: 8388608 average time for merge: 0.693115 for multi way: 0.186347
+chunk size is: 4194304 average time for merge: 0.649074 for multi way: 0.236358
+chunk size is: 2097152 average time for merge: 0.600771 for multi way: 0.363825
+chunk size is: 1048576 average time for merge: 0.551158 for multi way: 0.691156
+cache size selected: 32768
+cache factor is: 32 block length is: 256
+chunk size is: 67108864 average time for merge: 2.14524 for multi way: 0.548194
+chunk size is: 33554432 average time for merge: 1.09175 for multi way: 0.31035
+chunk size is: 16777216 average time for merge: 0.780648 for multi way: 0.182848
+chunk size is: 8388608 average time for merge: 0.712272 for multi way: 0.194734
+chunk size is: 4194304 average time for merge: 0.668674 for multi way: 0.275312
+chunk size is: 2097152 average time for merge: 0.617521 for multi way: 0.523597
+chunk size is: 1048576 average time for merge: 0.568138 for multi way: 0.945387
+cache size selected: 32768
+cache factor is: 64 block length is: 128
+chunk size is: 67108864 average time for merge: 2.12979 for multi way: 0.454656
+chunk size is: 33554432 average time for merge: 1.10168 for multi way: 0.271524
+chunk size is: 16777216 average time for merge: 0.804752 for multi way: 0.174431
+chunk size is: 8388608 average time for merge: 0.750833 for multi way: 0.213945
+chunk size is: 4194304 average time for merge: 0.705879 for multi way: 0.331116
+chunk size is: 2097152 average time for merge: 0.656215 for multi way: 0.630073
+chunk size is: 1048576 average time for merge: 0.610386 for multi way: 1.52348
+Output/append to file test.
+success!
+Output/append to file test.
+success!
+
+下面的数据是在opensuse kernel default而且是init 3的情况下测试各阶段运行及gpu排序的情况。能够影响gpu性能的，自然只有数据总长度和chunk大小。当要排序的数据量越来越大时，chunk大小带来的性能区别也越来越少。这应该是因为排序的kernel计算时间比cpu-gpu间数据传输的时间要多得多，或者说前者增加的速度比后者要快得多。这样数据量越大，排序的时间所占的比重越大。
+tested data length: 1048576
+cache factor   block length   chunk size     merge time     multi way      gpu omp        gpu cuda       
+1              8192           131072         0.00487138     0.00363453     0.00648733     6.03248        
+1              8192           65536          0.00423352     0.00377865     0.00769448     7.2556         
+1              8192           32768          0.00392828     0.00405144     0.00955167     9.08508        
+1              8192           16384          0.00362956     0.00526234     0.0159779      14.6318        
+2              4096           131072         0.00491065     0.00333896     0.00697066     6.26632        
+2              4096           65536          0.00421809     0.00357182     0.00791373     7.22066        
+2              4096           32768          0.00391889     0.00399252     0.00981562     9.095          
+2              4096           16384          0.00361006     0.00587243     0.0160447      14.6501        
+4              2048           131072         0.00489066     0.00310974     0.00697101     6.26758        
+4              2048           65536          0.00423236     0.00337024     0.00788624     7.21431        
+4              2048           32768          0.00390177     0.00405635     0.00980582     9.09647        
+4              2048           16384          0.0035925      0.00651996     0.0160454      14.6445        
+8              1024           131072         0.00485467     0.00289253     0.00696577     6.26845        
+8              1024           65536          0.00424771     0.00351608     0.00789853     7.21515        
+8              1024           32768          0.00394923     0.00464937     0.00976582     9.05014        
+8              1024           16384          0.00360476     0.00855886     0.0160412      14.6372        
+16             512            131072         0.00495624     0.00279871     0.00696563     6.26643        
+16             512            65536          0.00428087     0.00348572     0.00788609     7.21096        
+16             512            32768          0.00397098     0.00522562     0.0097556      9.046          
+16             512            16384          0.00361457     0.0105033      0.0160606      14.6418        
+32             256            131072         0.00499474     0.0028894      0.00698929     6.27271        
+32             256            65536          0.00429606     0.00450605     0.00790412     7.2179         
+32             256            32768          0.00397847     0.00712372     0.00981689     9.0912         
+32             256            16384          0.00362382     0.0157277      0.0160693      14.6403        
+64             128            131072         0.00495582     0.00292037     0.0067566      6.04625        
+64             128            65536          0.00430662     0.00462144     0.00791006     7.21774        
+64             128            32768          0.00395806     0.00865346     0.0098237      9.09769        
+64             128            16384          0.00363915     0.0225313      0.0160743      14.6472        
+
+
+tested data length: 2097152
+cache factor   block length   chunk size     merge time     multi way      gpu omp        gpu cuda       
+1              8192           262144         0.012196       0.00773677     0.0102158      9.47895        
+1              8192           131072         0.00942467     0.00797621     0.012469       11.7193        
+1              8192           65536          0.00913769     0.00906054     0.0150786      14.3004        
+1              8192           32768          0.00912372     0.0124428      0.0194915      18.0256        
+2              4096           262144         0.0139643      0.00840732     0.0104748      9.73446        
+2              4096           131072         0.00971101     0.00751216     0.0124643      11.7192        
+2              4096           65536          0.00835846     0.00804394     0.0150647      14.2997        
+2              4096           32768          0.00775699     0.0114811      0.0195406      18.0605        
+4              2048           262144         0.0139481      0.00668829     0.0104786      9.73495        
+4              2048           131072         0.00949116     0.00712101     0.0124828      11.7259        
+4              2048           65536          0.00837367     0.00823736     0.0150809      14.2987        
+4              2048           32768          0.00776508     0.0122302      0.0195175      18.0562        
+8              1024           262144         0.0145367      0.00612258     0.0104813      9.74821        
+8              1024           131072         0.00963182     0.00721374     0.0124622      11.7291        
+8              1024           65536          0.00844565     0.00915575     0.0150688      14.2995        
+8              1024           32768          0.00777381     0.0164827      0.0194957      18.0114        
+16             512            262144         0.0152198      0.00558836     0.0104178      9.67542        
+16             512            131072         0.00957703     0.00718502     0.0124892      11.726         
+16             512            65536          0.00851703     0.0101167      0.0150963      14.3095        
+16             512            32768          0.00779887     0.0196049      0.0194811      18.0109        
+32             256            262144         0.015864       0.00593294     0.0102886      9.53576        
+32             256            131072         0.00989634     0.00788519     0.012481       11.7259        
+32             256            65536          0.00855493     0.0141695      0.0150837      14.3068        
+32             256            32768          0.00783991     0.0282505      0.0195094      18.0015        
+64             128            262144         0.0163962      0.00575398     0.0102195      9.47736        
+64             128            131072         0.00981508     0.00923537     0.0124964      11.7255        
+64             128            65536          0.00858702     0.016952       0.0150948      14.3075        
+64             128            32768          0.00785214     0.0430395      0.0195798      18.0714        
+
+
+tested data length: 4194304
+cache factor   block length   chunk size     merge time     multi way      gpu omp        gpu cuda       
+1              8192           524288         0.0279047      0.0155139      0.0162911      15.5148        
+1              8192           262144         0.0252721      0.0156679      0.0192199      18.456         
+1              8192           131072         0.0193564      0.0165237      0.024038       23.2299        
+1              8192           65536          0.0166791      0.0202201      0.0298918      28.4779        
+2              4096           524288         0.0303305      0.0167048      0.0163116      15.5103        
+2              4096           262144         0.0273572      0.0159376      0.0192422      18.4557        
+2              4096           131072         0.0196342      0.0163351      0.0240491      23.244         
+2              4096           65536          0.0166699      0.0232211      0.0298813      28.4742        
+4              2048           524288         0.0302064      0.0130035      0.0163174      15.5585        
+4              2048           262144         0.0278178      0.0138662      0.0192219      18.4577        
+4              2048           131072         0.0200031      0.0167939      0.024051       23.25          
+4              2048           65536          0.0166496      0.0258932      0.02985        28.4823        
+8              1024           524288         0.0314675      0.0118254      0.0162028      15.4891        
+8              1024           262144         0.0291323      0.0138612      0.0191739      18.4558        
+8              1024           131072         0.0206354      0.0191932      0.0239915      23.2374        
+8              1024           65536          0.0168242      0.0345776      0.0298733      28.4744        
+16             512            524288         0.0327912      0.0110251      0.0161851      15.4682        
+16             512            262144         0.0304462      0.0136792      0.0191865      18.458         
+16             512            131072         0.0209396      0.0214164      0.0240026      23.2436        
+16             512            65536          0.0169972      0.0398498      0.0298613      28.4829        
+32             256            524288         0.0341181      0.0108133      0.0162327      15.5107        
+32             256            262144         0.0316969      0.01825        0.0191805      18.4549        
+32             256            131072         0.0209644      0.0302623      0.0240065      23.2408        
+32             256            65536          0.0171079      0.0635552      0.0298918      28.4833        
+64             128            524288         0.0352896      0.0114389      0.0162708      15.5545        
+64             128            262144         0.0329054      0.017909       0.0191788      18.4512        
+64             128            131072         0.0210533      0.0356511      0.0240202      23.2482        
+64             128            65536          0.0184662      0.0910068      0.0299239      28.4974        
+
+
+tested data length: 8388608
+cache factor   block length   chunk size     merge time     multi way      gpu omp        gpu cuda       
+1              8192           1048576        0.059937       0.0307026      0.0283036      27.5608        
+1              8192           524288         0.0549318      0.0313641      0.0308126      30.0557        
+1              8192           262144         0.0493931      0.0330056      0.0372624      36.4722        
+1              8192           131072         0.0375226      0.039459       0.0476374      46.2324        
+2              4096           1048576        0.0624714      0.0285355      0.0282591      27.4986        
+2              4096           524288         0.0575286      0.0288871      0.0308125      30.0503        
+2              4096           262144         0.05193        0.0328776      0.0372658      36.4743        
+2              4096           131072         0.0381094      0.0435109      0.0476368      46.2221        
+4              2048           1048576        0.0648963      0.0260703      0.0282626      27.5021        
+4              2048           524288         0.0599672      0.0270587      0.0308128      30.0536        
+4              2048           262144         0.0546619      0.0323475      0.0372685      36.4686        
+4              2048           131072         0.0382416      0.0497282      0.0476518      46.2269        
+8              1024           1048576        0.0674212      0.023916       0.0282877      27.531         
+8              1024           524288         0.0624384      0.0272698      0.0308246      30.0619        
+8              1024           262144         0.0577473      0.039564       0.037309       36.4898        
+8              1024           131072         0.0391934      0.0643214      0.0476734      46.2322        
+16             512            1048576        0.070122       0.0219302      0.0283648      27.5458        
+16             512            524288         0.0650311      0.0271178      0.0308714      30.0498        
+16             512            262144         0.059377       0.0399486      0.0373292      36.4799        
+16             512            131072         0.039338       0.0773001      0.0477197      46.2307        
+32             256            1048576        0.0727761      0.0228141      0.0283575      27.5474        
+32             256            524288         0.0675214      0.0344929      0.0308968      30.0578        
+32             256            262144         0.0620052      0.0597419      0.0373508      36.4812        
+32             256            131072         0.0398287      0.116448       0.0477266      46.2314        
+64             128            1048576        0.0751036      0.0227745      0.0283242      27.5128        
+64             128            524288         0.0698059      0.0357082      0.0308704      30.0531        
+64             128            262144         0.0642449      0.0664894      0.0373374      36.4814        
+64             128            131072         0.0397425      0.168614       0.0477369      46.2283        
+
+
+tested data length: 16777216
+cache factor   block length   chunk size     merge time     multi way      gpu omp        gpu cuda       
+1              8192           2097152        0.129866       0.0631933      0.0525992      51.7231        
+1              8192           1048576        0.119776       0.0637263      0.0544561      53.5751        
+1              8192           524288         0.108936       0.0657341      0.0603127      59.3875        
+1              8192           262144         0.0957066      0.0775056      0.0741481      72.5846        
+2              4096           2097152        0.134404       0.0566834      0.0525916      51.7245        
+2              4096           1048576        0.124429       0.0581902      0.0544801      53.597         
+2              4096           524288         0.114245       0.0642952      0.0603161      59.3936        
+2              4096           262144         0.100571       0.0848281      0.0741621      72.5806        
+4              2048           2097152        0.139413       0.0520188      0.0525943      51.7201        
+4              2048           1048576        0.129354       0.0539953      0.0544706      53.5867        
+4              2048           524288         0.118455       0.0686951      0.0603372      59.4044        
+4              2048           262144         0.104969       0.0955208      0.0741647      72.5919        
+8              1024           2097152        0.144249       0.0471373      0.0526105      51.7354        
+8              1024           1048576        0.134071       0.053037       0.0544811      53.5952        
+8              1024           524288         0.123172       0.0715863      0.0603339      59.3976        
+8              1024           262144         0.109548       0.125418       0.0741654      72.5943        
+16             512            2097152        0.14959        0.0437156      0.0526136      51.7375        
+16             512            1048576        0.139316       0.0539873      0.0544935      53.5962        
+16             512            524288         0.129174       0.0836946      0.0603359      59.4078        
+16             512            262144         0.116661       0.156426       0.0741644      72.5997        
+32             256            2097152        0.154542       0.042816       0.0526071      51.7394        
+32             256            1048576        0.144404       0.0627544      0.0544788      53.5854        
+32             256            524288         0.134222       0.107509       0.0603393      59.4016        
+32             256            262144         0.120828       0.243699       0.0741503      72.5914        
+64             128            2097152        0.159731       0.0452704      0.0526128      51.7324        
+64             128            1048576        0.149435       0.0715368      0.0544724      53.5748        
+64             128            524288         0.140437       0.141051       0.0603193      59.3842        
+64             128            262144         0.123751       0.346028       0.0741729      72.5918        
+
+
+tested data length: 33554432
+cache factor   block length   chunk size     merge time     multi way      gpu omp        gpu cuda       
+1              8192           4194304        0.278833       0.125815       0.100632       99.614         
+1              8192           2097152        0.259103       0.12924        0.10121        100.186        
+1              8192           1048576        0.2361         0.136261       0.103403       102.346        
+1              8192           524288         0.213475       0.159085       0.111018       109.311        
+2              4096           4194304        0.288449       0.117659       0.0931261      92.1178        
+2              4096           2097152        0.268668       0.119233       0.100461       99.429         
+2              4096           1048576        0.247968       0.133786       0.102841       101.779        
+2              4096           524288         0.222759       0.172918       0.111166       109.462        
+4              2048           4194304        0.297904       0.107743       0.0931469      92.1405        
+4              2048           2097152        0.27817        0.111901       0.0988516      97.8268        
+4              2048           1048576        0.257102       0.134877       0.102852       101.778        
+4              2048           524288         0.231603       0.194206       0.11093        109.213        
+8              1024           4194304        0.309774       0.100113       0.0931435      92.1403        
+8              1024           2097152        0.287968       0.109861       0.0937207      92.714         
+8              1024           1048576        0.266657       0.155542       0.0988627      97.8103        
+8              1024           524288         0.242618       0.242718       0.11084        109.134        
+16             512            4194304        0.320873       0.09263        0.0931544      92.1387        
+16             512            2097152        0.298953       0.112682       0.0937494      92.7159        
+16             512            1048576        0.27673        0.170273       0.0988033      97.748         
+16             512            524288         0.248787       0.318203       0.11085        109.136        
+32             256            4194304        0.330793       0.0949726      0.0931729      92.1603        
+32             256            2097152        0.308388       0.130396       0.0937266      92.7054        
+32             256            1048576        0.286948       0.247291       0.102117       101.053        
+32             256            524288         0.260697       0.439918       0.111668       109.955        
+64             128            4194304        0.340502       0.097521       0.0931453      92.1365        
+64             128            2097152        0.318016       0.151475       0.093717       92.6961        
+64             128            1048576        0.296584       0.286995       0.0989219      97.9261        
+64             128            524288         0.273592       0.69696        0.110856       109.188        
+
+
+tested data length: 67108864
+cache factor   block length   chunk size     merge time     multi way      gpu omp        gpu cuda       
+1              8192           8388608        0.60076        0.254641       0.182465       181.238        
+1              8192           4194304        0.561249       0.262527       0.179568       178.312        
+1              8192           2097152        0.517825       0.27164        0.18349        182.197        
+1              8192           1048576        0.464335       0.315507       0.19626        194.437        
+2              4096           8388608        0.620315       0.239973       0.182121       180.908        
+2              4096           4194304        0.580375       0.243549       0.179552       178.308        
+2              4096           2097152        0.534566       0.273292       0.183449       182.159        
+2              4096           1048576        0.48217        0.346023       0.196234       194.435        
+4              2048           8388608        0.639609       0.22047        0.182135       180.912        
+4              2048           4194304        0.598808       0.226404       0.17959        178.339        
+4              2048           2097152        0.554694       0.276961       0.183408       182.155        
+4              2048           1048576        0.501608       0.386114       0.196164       194.35         
+8              1024           8388608        0.658034       0.200952       0.182106       180.894        
+8              1024           4194304        0.617488       0.222005       0.179588       178.337        
+8              1024           2097152        0.573111       0.316936       0.18333        182.105        
+8              1024           1048576        0.520596       0.489181       0.196166       194.355        
+16             512            8388608        0.678219       0.180858       0.182107       180.898        
+16             512            4194304        0.637669       0.226954       0.179569       178.339        
+16             512            2097152        0.59478        0.34052        0.183248       182.05         
+16             512            1048576        0.538786       0.623867       0.196158       194.33         
+32             256            8388608        0.698694       0.188241       0.182104       180.881        
+32             256            4194304        0.656813       0.262862       0.179444       178.247        
+32             256            2097152        0.612078       0.499933       0.183249       182.029        
+32             256            1048576        0.560623       0.893341       0.196177       194.401        
+64             128            8388608        0.716689       0.190323       0.182064       180.861        
+64             128            4194304        0.675118       0.305148       0.179438       178.255        
+64             128            2097152        0.632411       0.577998       0.183373       182.116        
+64             128            1048576        0.582943       1.38125        0.196306       194.564        
+
+
+tested data length: 134217728
+cache factor   block length   chunk size     merge time     multi way      gpu omp        gpu cuda       
+1              8192           16777216       1.27867        0.508025       0.359494       357.793        
+1              8192           8388608        1.20184        0.521105       0.35224        350.508        
+1              8192           4194304        1.1111         0.539969       0.352384       350.58         
+1              8192           2097152        1.00117        0.616662       0.363419       360.989        
+2              4096           16777216       1.31744        0.473769       0.359071       357.357        
+2              4096           8388608        1.23921        0.485617       0.352289       350.561        
+2              4096           4194304        1.15135        0.535282       0.352414       350.63         
+2              4096           2097152        1.04113        0.719597       0.36344        361.083        
+4              2048           16777216       1.35732        0.436528       0.359094       357.402        
+4              2048           8388608        1.27743        0.452028       0.352289       350.57         
+4              2048           4194304        1.18916        0.543369       0.352439       350.649        
+4              2048           2097152        1.07381        0.758775       0.363406       361.055        
+8              1024           16777216       1.39427        0.397088       0.359053       357.337        
+8              1024           8388608        1.31477        0.444568       0.352289       350.564        
+8              1024           4194304        1.22528        0.611969       0.35252        350.733        
+8              1024           2097152        1.11211        1.0931         0.363478       361.008        
+16             512            16777216       1.43577        0.366237       0.359115       357.392        
+16             512            8388608        1.35591        0.457148       0.352238       350.535        
+16             512            4194304        1.2647         0.677423       0.352545       350.751        
+16             512            2097152        1.15066        1.231          0.363681       361.2          
+32             256            16777216       1.47393        0.367335       0.359121       357.4          
+32             256            8388608        1.39483        0.534617       0.352277       350.564        
+32             256            4194304        1.30422        0.949957       0.352515       350.708        
+32             256            2097152        1.19595        2.12184        0.36514        362.649        
+64             128            16777216       1.5095         0.381129       0.359166       357.452        
+64             128            8388608        1.43096        0.60651        0.352294       350.553        
+64             128            4194304        1.33906        1.13266        0.35332        351.499        
+64             128            2097152        1.24202        2.75111        0.364963       362.483        
+
+
+tested data length: 268435456
+cache factor   block length   chunk size     merge time     multi way      gpu omp        gpu cuda       
+
+
+gpu kernel and transfer test
+data length    transfer time  kernel time    
+131072         0.141468       0.707043       
+262144         0.271736       1.10394        
+524288         0.436042       1.78852        
+1048576        0.764523       2.99288        
+2097152        1.42352        5.44717        
+4194304        2.71637        10.5398        
+8388608        5.32359        20.7386        
+16777216       10.5362        41.1821        
+33554432       20.9584        81.8091        
+67108864       41.8165        163.285        
+134217728      83.5161        327.614        
+
+
+tested data length: 1048576
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           131072         0.00602409     0.0045537      
+1              8192           65536          0.00557754     0.00472258     
+1              8192           32768          0.00511307     0.00495993     
+1              8192           16384          0.0046876      0.00657198     
+2              4096           131072         0.00600161     0.00415643     
+2              4096           65536          0.0055379      0.00432099     
+2              4096           32768          0.00508193     0.00478401     
+2              4096           16384          0.00464252     0.00662644     
+4              2048           131072         0.00600902     0.00374336     
+4              2048           65536          0.00554577     0.00416817     
+4              2048           32768          0.00509218     0.00475376     
+4              2048           16384          0.00464915     0.00760079     
+8              1024           131072         0.00599442     0.00344255     
+8              1024           65536          0.0055441      0.00400054     
+8              1024           32768          0.00508095     0.00523432     
+8              1024           16384          0.00463455     0.00915217     
+16             512            131072         0.00614222     0.00335864     
+16             512            65536          0.00568835     0.00431853     
+16             512            32768          0.00521792     0.00577685     
+16             512            16384          0.00475626     0.0117665      
+32             256            131072         0.00628188     0.00351862     
+32             256            65536          0.00581948     0.0050944      
+32             256            32768          0.00535015     0.00788992     
+32             256            16384          0.0048513      0.0165558      
+64             128            131072         0.00660018     0.00371936     
+64             128            65536          0.00610987     0.00563271     
+64             128            32768          0.00563324     0.00947698     
+64             128            16384          0.00568752     0.0264414      
+
+
+tested data length: 2097152
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           262144         0.014345       0.0113728      
+1              8192           131072         0.0134979      0.0113008      
+1              8192           65536          0.0119044      0.0110461      
+1              8192           32768          0.0102111      0.0121481      
+2              4096           262144         0.0129686      0.00884728     
+2              4096           131072         0.0120852      0.00899056     
+2              4096           65536          0.0111828      0.00987708     
+2              4096           32768          0.0103009      0.0130314      
+4              2048           262144         0.0130215      0.00801777     
+4              2048           131072         0.0121378      0.00860134     
+4              2048           65536          0.0112402      0.00981418     
+4              2048           32768          0.0103103      0.0145749      
+8              1024           262144         0.0130685      0.00723398     
+8              1024           131072         0.0121647      0.00802321     
+8              1024           65536          0.0112197      0.0105306      
+8              1024           32768          0.0103161      0.0168381      
+16             512            262144         0.013421       0.00690192     
+16             512            131072         0.0125051      0.00829455     
+16             512            65536          0.0116068      0.011605       
+16             512            32768          0.0106959      0.0217141      
+32             256            262144         0.013643       0.0070729      
+32             256            131072         0.0127538      0.00892387     
+32             256            65536          0.0118368      0.016066       
+32             256            32768          0.0109315      0.02895        
+64             128            262144         0.0143631      0.00747054     
+64             128            131072         0.0134955      0.0112068      
+64             128            65536          0.0125042      0.0187191      
+64             128            32768          0.0114904      0.0457463      
+
+
+tested data length: 1048576
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           131072         0.121342       0.113118       
+1              8192           65536          0.118816       0.123142       
+1              8192           32768          0.117853       0.11721        
+1              8192           16384          0.123097       0.127823       
+2              4096           131072         0.0680541      0.0648217      
+2              4096           65536          0.0676248      0.0622498      
+2              4096           32768          0.0673001      0.0636358      
+2              4096           16384          0.0671043      0.0679831      
+4              2048           131072         0.0384989      0.03545        
+4              2048           65536          0.0377664      0.0363396      
+4              2048           32768          0.0374914      0.0375905      
+4              2048           16384          0.0372371      0.0413322      
+8              1024           131072         0.0204032      0.0220355      
+8              1024           65536          0.0198129      0.0220039      
+8              1024           32768          0.0196085      0.0216466      
+8              1024           16384          0.0192205      0.025368       
+16             512            131072         0.0118876      0.0123189      
+16             512            65536          0.0115054      0.0118618      
+16             512            32768          0.0124358      0.0145389      
+16             512            16384          0.012286       0.0207319      
+32             256            131072         0.00854379     0.00770199     
+32             256            65536          0.00750641     0.00850875     
+32             256            32768          0.00681624     0.0101911      
+32             256            16384          0.00646781     0.0200483      
+64             128            131072         0.0066008      0.00473508     
+64             128            65536          0.00597146     0.00640918     
+64             128            32768          0.00561516     0.0107694      
+64             128            16384          0.00527474     0.0260669      
+
+
+tested data length: 2097152
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           262144         0.26234        0.239683       
+1              8192           131072         0.261769       0.259552       
+1              8192           65536          0.261529       0.255509       
+1              8192           32768          0.258287       0.261699       
+2              4096           262144         0.138479       0.130411       
+2              4096           131072         0.136445       0.125503       
+2              4096           65536          0.134738       0.128016       
+2              4096           32768          0.134348       0.136572       
+4              2048           262144         0.081315       0.0712888      
+4              2048           131072         0.0777924      0.0728147      
+4              2048           65536          0.0797238      0.0803206      
+4              2048           32768          0.075474       0.0834344      
+8              1024           262144         0.0453339      0.0444124      
+8              1024           131072         0.0410857      0.0438799      
+8              1024           65536          0.0399156      0.0434617      
+8              1024           32768          0.0393088      0.0488539      
+16             512            262144         0.0292202      0.0241011      
+16             512            131072         0.0242414      0.0226941      
+16             512            65536          0.0228244      0.0252868      
+16             512            32768          0.0221705      0.0365184      
+32             256            262144         0.0213847      0.01296        
+32             256            131072         0.0156882      0.0140911      
+32             256            65536          0.0143421      0.0207917      
+32             256            32768          0.0137291      0.0359397      
+64             128            262144         0.0195758      0.0090111      
+64             128            131072         0.013431       0.0129914      
+64             128            65536          0.0120064      0.0214619      
+64             128            32768          0.0112919      0.0511211      
+
+
+
+tested data length: 1048576
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           131072         0.236767       0.33036        
+1              8192           65536          0.236785       0.374777       
+1              8192           32768          0.255734       0.40598        
+1              8192           16384          0.255636       0.386225       
+2              4096           131072         0.0992862      0.132289       
+2              4096           65536          0.0960152      0.124304       
+2              4096           32768          0.0959808      0.122356       
+2              4096           16384          0.0958709      0.114987       
+4              2048           131072         0.0465323      0.0515303      
+4              2048           65536          0.0457624      0.0515334      
+4              2048           32768          0.0455293      0.0495389      
+4              2048           16384          0.0451812      0.0497217      
+8              1024           131072         0.0232383      0.0260641      
+8              1024           65536          0.0226771      0.025741       
+8              1024           32768          0.0223552      0.0245505      
+8              1024           16384          0.022044       0.0282335      
+16             512            131072         0.0119359      0.0124295      
+16             512            65536          0.0114485      0.0112384      
+16             512            32768          0.0111385      0.0127718      
+16             512            16384          0.0107915      0.0188211      
+32             256            131072         0.00783912     0.00664715     
+32             256            65536          0.00712724     0.00827174     
+32             256            32768          0.00687033     0.0103448      
+32             256            16384          0.00694471     0.02176        
+64             128            131072         0.00722843     0.00555378     
+64             128            65536          0.00680596     0.00791386     
+64             128            32768          0.00670643     0.0122435      
+64             128            16384          0.0061358      0.0285379      
+
+
+tested data length: 2097152
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           262144         0.490607       0.698375       
+1              8192           131072         0.490691       0.779644       
+1              8192           65536          0.484839       0.775107       
+1              8192           32768          0.489366       0.750624       
+2              4096           262144         0.195104       0.261552       
+2              4096           131072         0.191814       0.257275       
+2              4096           65536          0.18941        0.24893        
+2              4096           32768          0.190019       0.232917       
+4              2048           262144         0.100145       0.109008       
+4              2048           131072         0.093168       0.103254       
+4              2048           65536          0.091735       0.09909        
+4              2048           32768          0.0911975      0.0989044      
+8              1024           262144         0.0513737      0.0525954      
+8              1024           131072         0.0467529      0.0507692      
+8              1024           65536          0.0455474      0.0498838      
+8              1024           32768          0.0450415      0.0546636      
+16             512            262144         0.0293773      0.0242984      
+16             512            131072         0.0245923      0.0230786      
+16             512            65536          0.0230445      0.0255712      
+16             512            32768          0.0222993      0.0367812      
+32             256            262144         0.0202023      0.0132944      
+32             256            131072         0.0157429      0.0144966      
+32             256            65536          0.0145488      0.0212395      
+32             256            32768          0.0138449      0.0368747      
+64             128            262144         0.0194232      0.00920082     
+64             128            131072         0.0134838      0.013343       
+64             128            65536          0.0122294      0.0215943      
+64             128            32768          0.0114047      0.0512116      
+
+
+tested data length: 1048576
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           131072         0.0048534      0.00368417     
+1              8192           65536          0.00423724     0.00377406     
+1              8192           32768          0.00393045     0.00412206     
+1              8192           16384          0.00363892     0.00543329     
+2              4096           131072         0.00489503     0.0033874      
+2              4096           65536          0.00421928     0.00361028     
+2              4096           32768          0.00393446     0.00407604     
+2              4096           16384          0.0036243      0.00614027     
+4              2048           131072         0.00480916     0.00323622     
+4              2048           65536          0.00424787     0.00342611     
+4              2048           32768          0.00394032     0.00429615     
+4              2048           16384          0.00363697     0.00688732     
+8              1024           131072         0.00482784     0.0029782      
+8              1024           65536          0.00427404     0.00360856     
+8              1024           32768          0.00396181     0.00469151     
+8              1024           16384          0.00364987     0.00900937     
+16             512            131072         0.00486156     0.00294817     
+16             512            65536          0.00430256     0.0035308      
+16             512            32768          0.00398346     0.0054282      
+16             512            16384          0.00367036     0.0109883      
+32             256            131072         0.0049264      0.00299514     
+32             256            65536          0.00432223     0.00466693     
+32             256            32768          0.00399711     0.00725013     
+32             256            16384          0.0036733      0.0166287      
+64             128            131072         0.0049413      0.00297956     
+64             128            65536          0.00432296     0.00465075     
+64             128            32768          0.00398838     0.00884144     
+64             128            16384          0.00367066     0.0232534      
+
+
+tested data length: 2097152
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           262144         0.0127335      0.00770138     
+1              8192           131072         0.0094724      0.00806621     
+1              8192           65536          0.00840297     0.00827371     
+1              8192           32768          0.00779985     0.0100782      
+2              4096           262144         0.0134172      0.00726578     
+2              4096           131072         0.00946837     0.00764026     
+2              4096           65536          0.00842861     0.00839692     
+2              4096           32768          0.00782274     0.0116928      
+4              2048           262144         0.0140309      0.00674548     
+4              2048           131072         0.00948214     0.00725478     
+4              2048           65536          0.00846204     0.0085484      
+4              2048           32768          0.00786876     0.0132078      
+8              1024           262144         0.0146008      0.00630693     
+8              1024           131072         0.0095915      0.00724758     
+8              1024           65536          0.00850327     0.00978144     
+8              1024           32768          0.00787939     0.0164755      
+16             512            262144         0.0146087      0.00605603     
+16             512            131072         0.00972174     0.00730591     
+16             512            65536          0.00855196     0.0104517      
+16             512            32768          0.00792411     0.02072        
+32             256            262144         0.0150389      0.00625562     
+32             256            131072         0.0107472      0.00983614     
+32             256            65536          0.00994982     0.0168794      
+32             256            32768          0.00908479     0.0319618      
+64             128            262144         0.0163497      0.00591006     
+64             128            131072         0.0100154      0.00946162     
+64             128            65536          0.00858303     0.0173078      
+64             128            32768          0.00793617     0.0442032      
+
+
+tested data length: 1048576
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           131072         0.00585542     0.00503359     
+1              8192           65536          0.00472532     0.00448893     
+1              8192           32768          0.00468626     0.00546798     
+1              8192           16384          0.00426133     0.00616839     
+2              4096           131072         0.00474936     0.00342038     
+2              4096           65536          0.00421671     0.00362557     
+2              4096           32768          0.0039147      0.00409878     
+2              4096           16384          0.00363924     0.00586133     
+4              2048           131072         0.00470344     0.0031666      
+4              2048           65536          0.00425992     0.00347373     
+4              2048           32768          0.00394434     0.00418032     
+4              2048           16384          0.00363191     0.0068972      
+8              1024           131072         0.00473712     0.00301904     
+8              1024           65536          0.00426702     0.00359783     
+8              1024           32768          0.00395085     0.00470551     
+8              1024           16384          0.00364414     0.00871177     
+16             512            131072         0.00480765     0.0028856      
+16             512            65536          0.00430204     0.00359477     
+16             512            32768          0.00397097     0.00532596     
+16             512            16384          0.00365638     0.0109854      
+32             256            131072         0.00482757     0.00301713     
+32             256            65536          0.00431246     0.00468465     
+32             256            32768          0.00398553     0.00715889     
+32             256            16384          0.00367679     0.0159914      
+64             128            131072         0.00485927     0.00298644     
+64             128            65536          0.00430266     0.00461076     
+64             128            32768          0.00397976     0.00883819     
+64             128            16384          0.00366028     0.0233176      
+
+
+tested data length: 2097152
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           262144         0.0126778      0.00771125     
+1              8192           131072         0.00958504     0.00801828     
+1              8192           65536          0.00840293     0.0083162      
+1              8192           32768          0.00781887     0.0109015      
+2              4096           262144         0.0133552      0.00730781     
+2              4096           131072         0.00949683     0.00760291     
+2              4096           65536          0.00844014     0.00843527     
+2              4096           32768          0.00784603     0.0116904      
+4              2048           262144         0.0140041      0.00676957     
+4              2048           131072         0.009831       0.00731456     
+4              2048           65536          0.00846886     0.00865682     
+4              2048           32768          0.00785738     0.0145716      
+8              1024           262144         0.0140524      0.00646239     
+8              1024           131072         0.00947045     0.00728132     
+8              1024           65536          0.00850729     0.00956624     
+8              1024           32768          0.00787609     0.016256       
+16             512            262144         0.0152393      0.00571729     
+16             512            131072         0.0100272      0.00757282     
+16             512            65536          0.00855525     0.0105467      
+16             512            32768          0.00792605     0.0216425      
+32             256            262144         0.0159062      0.0059721      
+32             256            131072         0.00975667     0.00808159     
+32             256            65536          0.00858601     0.0148445      
+32             256            32768          0.00832494     0.0292262      
+64             128            262144         0.0174913      0.00769756     
+64             128            131072         0.0114771      0.0114443      
+64             128            65536          0.00963444     0.0201433      
+64             128            32768          0.00794411     0.0451895      
+
+
+tested data length: 1048576
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           131072         0.00472434     0.00360406     
+1              8192           65536          0.00409031     0.0036975      
+1              8192           32768          0.00379585     0.00401704     
+1              8192           16384          0.00350825     0.00534136     
+2              4096           131072         0.00467101     0.00329917     
+2              4096           65536          0.00407227     0.00354234     
+2              4096           32768          0.00377502     0.00396763     
+2              4096           16384          0.00348972     0.00605362     
+4              2048           131072         0.00465294     0.00311827     
+4              2048           65536          0.00407585     0.00332979     
+4              2048           32768          0.00378539     0.00408621     
+4              2048           16384          0.00349949     0.0067161      
+8              1024           131072         0.00463521     0.00291051     
+8              1024           65536          0.00410464     0.00356061     
+8              1024           32768          0.00379498     0.00462923     
+8              1024           16384          0.00350548     0.0091765      
+16             512            131072         0.00470039     0.00285171     
+16             512            65536          0.00414409     0.00346282     
+16             512            32768          0.00381981     0.00535472     
+16             512            16384          0.00351946     0.0109679      
+32             256            131072         0.00472283     0.00295104     
+32             256            65536          0.00415976     0.00467374     
+32             256            32768          0.00382799     0.00724443     
+32             256            16384          0.00352443     0.0169629      
+64             128            131072         0.00476852     0.00298202     
+64             128            65536          0.00416953     0.00463407     
+64             128            32768          0.00384163     0.00899261     
+64             128            16384          0.0035338      0.0234167      
+
+
+tested data length: 2097152
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           262144         0.0125371      0.00753833     
+1              8192           131072         0.0095835      0.00781045     
+1              8192           65536          0.00811209     0.00826992     
+1              8192           32768          0.00756626     0.0103227      
+2              4096           262144         0.0131864      0.00706453     
+2              4096           131072         0.00968312     0.00741475     
+2              4096           65536          0.00815648     0.00819714     
+2              4096           32768          0.00756848     0.0121693      
+4              2048           262144         0.013801       0.00651129     
+4              2048           131072         0.00924643     0.00696666     
+4              2048           65536          0.0081426      0.00819935     
+4              2048           32768          0.00756122     0.0130907      
+8              1024           262144         0.014494       0.00600739     
+8              1024           131072         0.00979792     0.00704743     
+8              1024           65536          0.00819091     0.00934858     
+8              1024           32768          0.00758569     0.0171779      
+16             512            262144         0.0151887      0.00562017     
+16             512            131072         0.00947719     0.00702584     
+16             512            65536          0.00917731     0.0122644      
+16             512            32768          0.0085382      0.0229189      
+32             256            262144         0.0167741      0.00817943     
+32             256            131072         0.0106455      0.00944825     
+32             256            65536          0.00829171     0.0147761      
+32             256            32768          0.00765621     0.0288594      
+64             128            262144         0.016483       0.00586135     
+64             128            131072         0.00996974     0.00936257     
+64             128            65536          0.00832439     0.0173671      
+64             128            32768          0.00765446     0.0449719      
+
+
+tested data length: 131072
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           16384          0.000446292    0.000441288    
+1              8192           8192           0.000407937    0.000463757    
+2              4096           16384          0.000443978    0.00040603     
+2              4096           8192           0.000407738    0.000443066    
+2              4096           4096           0.000372182    0.000584048    
+4              2048           16384          0.000441573    0.000378112    
+4              2048           8192           0.000404717    0.00042218     
+4              2048           4096           0.000368489    0.000595825    
+4              2048           2048           0.000333782    0.0014352      
+8              1024           16384          0.000439957    0.000360348    
+8              1024           8192           0.00040411     0.000433595    
+8              1024           4096           0.000368691    0.000703605    
+8              1024           2048           0.000333341    0.00185814     
+16             512            16384          0.000442409    0.000346048    
+16             512            8192           0.000408136    0.00044511     
+16             512            4096           0.00036984     0.000769576    
+16             512            2048           0.000335508    0.00200103     
+32             256            16384          0.000449432    0.000378937    
+32             256            8192           0.000407502    0.000544532    
+32             256            4096           0.000372123    0.00114584     
+32             256            2048           0.000336915    0.0029976      
+64             128            16384          0.000444828    0.000374554    
+64             128            8192           0.000408783    0.000607835    
+64             128            4096           0.000375959    0.00125998     
+64             128            2048           0.0003389      0.00360948     
+
+
+tested data length: 262144
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           32768          0.000949547    0.000866499    
+1              8192           16384          0.000875811    0.000899412    
+1              8192           8192           0.00080318     0.00105258     
+2              4096           32768          0.000945884    0.000799914    
+2              4096           16384          0.000874039    0.000850451    
+2              4096           8192           0.000801173    0.00106406     
+2              4096           4096           0.000729718    0.00201016     
+4              2048           32768          0.000941172    0.000745125    
+4              2048           16384          0.000869178    0.000822741    
+4              2048           8192           0.000796734    0.00108012     
+4              2048           4096           0.000729198    0.00231946     
+8              1024           32768          0.00095186     0.000716984    
+8              1024           16384          0.000868604    0.000829958    
+8              1024           8192           0.000797638    0.00124813     
+8              1024           4096           0.0007266      0.00280317     
+16             512            32768          0.000947046    0.000681841    
+16             512            16384          0.000872855    0.000869566    
+16             512            8192           0.000802653    0.00141546     
+16             512            4096           0.000731612    0.00347004     
+32             256            32768          0.000948647    0.000737548    
+32             256            16384          0.000876282    0.000995544    
+32             256            8192           0.000804926    0.00197217     
+32             256            4096           0.000733547    0.00477694     
+64             128            32768          0.000953223    0.000743618    
+64             128            16384          0.000878921    0.00120679     
+64             128            8192           0.000811179    0.00238413     
+64             128            4096           0.000737457    0.00675183     
+
+
+tested data length: 524288
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           65536          0.00205134     0.00171978     
+1              8192           32768          0.00190887     0.00177694     
+1              8192           16384          0.0017621      0.00199239     
+1              8192           8192           0.00161747     0.00311843     
+2              4096           65536          0.00204978     0.00160184     
+2              4096           32768          0.0019051      0.0016893      
+2              4096           16384          0.00176048     0.0019882      
+2              4096           8192           0.001616       0.00336136     
+4              2048           65536          0.0020511      0.00150523     
+4              2048           32768          0.00189058     0.00161876     
+4              2048           16384          0.00174886     0.00205221     
+4              2048           8192           0.001605       0.00390783     
+8              1024           65536          0.00204248     0.00143049     
+8              1024           32768          0.0018939      0.00163421     
+8              1024           16384          0.00174705     0.002407       
+8              1024           8192           0.00160252     0.00497105     
+16             512            65536          0.0020512      0.00136809     
+16             512            32768          0.00190731     0.00173079     
+16             512            16384          0.00175596     0.00276657     
+16             512            8192           0.001608       0.00629767     
+32             256            65536          0.00205884     0.00148805     
+32             256            32768          0.00190658     0.00196806     
+32             256            16384          0.00175891     0.00383531     
+32             256            8192           0.00161056     0.00897096     
+64             128            65536          0.00205941     0.00146787     
+64             128            32768          0.00191106     0.00239233     
+64             128            16384          0.00176395     0.00471473     
+64             128            8192           0.00161758     0.0128955      
+
+
+tested data length: 1048576
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           131072         0.00479599     0.003597       
+1              8192           65536          0.0041132      0.00370297     
+1              8192           32768          0.00380255     0.0039959      
+1              8192           16384          0.00351361     0.00533879     
+2              4096           131072         0.00484099     0.00333867     
+2              4096           65536          0.00407213     0.00352642     
+2              4096           32768          0.00377521     0.00394931     
+2              4096           16384          0.00349313     0.00581051     
+4              2048           131072         0.00483985     0.00309814     
+4              2048           65536          0.00407273     0.00332552     
+4              2048           32768          0.00378399     0.00404986     
+4              2048           16384          0.00349648     0.00671543     
+8              1024           131072         0.00474342     0.00296104     
+8              1024           65536          0.00409428     0.00351539     
+8              1024           32768          0.00380186     0.00463227     
+8              1024           16384          0.00350417     0.00863585     
+16             512            131072         0.00484368     0.00281046     
+16             512            65536          0.00412266     0.00344684     
+16             512            32768          0.00381633     0.00520767     
+16             512            16384          0.00351623     0.0109596      
+32             256            131072         0.00485919     0.00293518     
+32             256            65536          0.00414513     0.00461448     
+32             256            32768          0.00383104     0.00721362     
+32             256            16384          0.00352141     0.0159736      
+64             128            131072         0.00493832     0.00295197     
+64             128            65536          0.0041638      0.0045658      
+64             128            32768          0.00383666     0.0087427      
+64             128            16384          0.00353146     0.0233402      
+
+
+tested data length: 2097152
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           262144         0.0127918      0.00796557     
+1              8192           131072         0.0107787      0.00942215     
+1              8192           65536          0.00922765     0.00982006     
+1              8192           32768          0.00856947     0.0118306      
+2              4096           262144         0.013879       0.00874575     
+2              4096           131072         0.00975485     0.00747808     
+2              4096           65536          0.00814089     0.00800689     
+2              4096           32768          0.00756629     0.0108626      
+4              2048           262144         0.0137614      0.0065047      
+4              2048           131072         0.00977362     0.00711794     
+4              2048           65536          0.00815877     0.00823831     
+4              2048           32768          0.00759918     0.0131169      
+8              1024           262144         0.0144174      0.0060073      
+8              1024           131072         0.00978907     0.00709764     
+8              1024           65536          0.00819215     0.00935948     
+8              1024           32768          0.00759721     0.0159684      
+16             512            262144         0.0151338      0.00560305     
+16             512            131072         0.0100259      0.00721196     
+16             512            65536          0.00825709     0.0103999      
+16             512            32768          0.00763981     0.0203618      
+32             256            262144         0.015807       0.0058629      
+32             256            131072         0.0101156      0.00800499     
+32             256            65536          0.0082868      0.0145343      
+32             256            32768          0.00821933     0.0302905      
+64             128            262144         0.0166401      0.00604899     
+64             128            131072         0.0107853      0.0100855      
+64             128            65536          0.00899027     0.018755       
+64             128            32768          0.00824018     0.0478874      
+
+
+tested data length: 4194304
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           524288         0.0278583      0.0157473      
+1              8192           262144         0.025706       0.0163978      
+1              8192           131072         0.0194967      0.0175629      
+1              8192           65536          0.0175951      0.021943       
+2              4096           524288         0.0294326      0.0148402      
+2              4096           262144         0.0279127      0.0177658      
+2              4096           131072         0.0219017      0.0199881      
+2              4096           65536          0.0177489      0.0248489      
+4              2048           524288         0.0306862      0.0136775      
+4              2048           262144         0.0281019      0.0145078      
+4              2048           131072         0.0198378      0.0178236      
+4              2048           65536          0.0176518      0.0279041      
+8              1024           524288         0.0319042      0.0125251      
+8              1024           262144         0.0293106      0.0149643      
+8              1024           131072         0.0209036      0.0209046      
+8              1024           65536          0.017629       0.0365795      
+16             512            524288         0.0333032      0.0116956      
+16             512            262144         0.0307041      0.0147526      
+16             512            131072         0.0204542      0.0223962      
+16             512            65536          0.0178121      0.0443365      
+32             256            524288         0.03456        0.0116013      
+32             256            262144         0.0319375      0.0192246      
+32             256            131072         0.0209635      0.0328502      
+32             256            65536          0.0171996      0.0701165      
+64             128            524288         0.0357864      0.0121882      
+64             128            262144         0.0333734      0.0192989      
+64             128            131072         0.0205093      0.0369947      
+64             128            65536          0.0176907      0.0945599      
+
+
+tested data length: 8388608
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           1048576        0.0616007      0.0345157      
+1              8192           524288         0.0558364      0.0328504      
+1              8192           262144         0.0502927      0.0344784      
+1              8192           131072         0.0391449      0.0419129      
+2              4096           1048576        0.0635486      0.029842       
+2              4096           524288         0.0585487      0.0306975      
+2              4096           262144         0.0529638      0.0344333      
+2              4096           131072         0.0397654      0.0476628      
+4              2048           1048576        0.0659562      0.0275443      
+4              2048           524288         0.0609062      0.0288043      
+4              2048           262144         0.0551187      0.0346693      
+4              2048           131072         0.0400023      0.0532514      
+8              1024           1048576        0.0684018      0.0254064      
+8              1024           524288         0.0632767      0.0295788      
+8              1024           262144         0.056922       0.040721       
+8              1024           131072         0.0398101      0.0687126      
+16             512            1048576        0.0713781      0.023626       
+16             512            524288         0.0670771      0.031524       
+16             512            262144         0.0604392      0.0447338      
+16             512            131072         0.0410877      0.0843236      
+32             256            1048576        0.0741754      0.0247704      
+32             256            524288         0.0687786      0.0374067      
+32             256            262144         0.0633859      0.0638712      
+32             256            131072         0.0401269      0.127665       
+64             128            1048576        0.0763127      0.0244598      
+64             128            524288         0.0709257      0.0386299      
+64             128            262144         0.0647584      0.0724253      
+64             128            131072         0.0427023      0.182892       
+
+
+tested data length: 16777216
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           2097152        0.131284       0.0628336      
+1              8192           1048576        0.121126       0.0650092      
+1              8192           524288         0.110376       0.068133       
+1              8192           262144         0.0988522      0.0843408      
+2              4096           2097152        0.136835       0.0595124      
+2              4096           1048576        0.126167       0.0607641      
+2              4096           524288         0.115126       0.0670116      
+2              4096           262144         0.102199       0.0905594      
+4              2048           2097152        0.141535       0.0550752      
+4              2048           1048576        0.130969       0.0571228      
+4              2048           524288         0.11957        0.0690641      
+4              2048           262144         0.106315       0.101658       
+8              1024           2097152        0.146411       0.050134       
+8              1024           1048576        0.135857       0.0564682      
+8              1024           524288         0.124638       0.0762015      
+8              1024           262144         0.111298       0.13848        
+16             512            2097152        0.152381       0.0467589      
+16             512            1048576        0.141739       0.0576187      
+16             512            524288         0.130265       0.0874987      
+16             512            262144         0.114068       0.165274       
+32             256            2097152        0.157614       0.0459875      
+32             256            1048576        0.146674       0.0680184      
+32             256            524288         0.135474       0.11511        
+32             256            262144         0.117709       0.259181       
+64             128            2097152        0.163161       0.0496519      
+64             128            1048576        0.1523         0.0785414      
+64             128            524288         0.140632       0.148522       
+64             128            262144         0.126988       0.362892       
+
+
+tested data length: 33554432
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           4194304        0.280769       0.126347       
+1              8192           2097152        0.261128       0.130623       
+1              8192           1048576        0.239171       0.137633       
+1              8192           524288         0.215262       0.163803       
+2              4096           4194304        0.292414       0.119881       
+2              4096           2097152        0.27083        0.122154       
+2              4096           1048576        0.249171       0.137626       
+2              4096           524288         0.224477       0.175613       
+4              2048           4194304        0.301693       0.110224       
+4              2048           2097152        0.280335       0.115288       
+4              2048           1048576        0.258384       0.139092       
+4              2048           524288         0.233421       0.200601       
+8              1024           4194304        0.311466       0.10088        
+8              1024           2097152        0.290677       0.113188       
+8              1024           1048576        0.266733       0.163198       
+8              1024           524288         0.24283        0.250944       
+16             512            4194304        0.322662       0.0942474      
+16             512            2097152        0.301287       0.116744       
+16             512            1048576        0.278301       0.176155       
+16             512            524288         0.250811       0.334651       
+32             256            4194304        0.333035       0.0970632      
+32             256            2097152        0.312097       0.136548       
+32             256            1048576        0.287727       0.260479       
+32             256            524288         0.262374       0.460792       
+64             128            4194304        0.344184       0.0977348      
+64             128            2097152        0.321609       0.157233       
+64             128            1048576        0.300126       0.297064       
+64             128            524288         0.275654       0.732855       
+
+
+tested data length: 67108864
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           8388608        0.602354       0.255481       
+1              8192           4194304        0.560971       0.263557       
+1              8192           2097152        0.513208       0.278535       
+1              8192           1048576        0.464998       0.318894       
+2              4096           8388608        0.623536       0.241137       
+2              4096           4194304        0.580184       0.248779       
+2              4096           2097152        0.53512        0.276585       
+2              4096           1048576        0.482754       0.351914       
+4              2048           8388608        0.643382       0.222656       
+4              2048           4194304        0.599393       0.231427       
+4              2048           2097152        0.55142        0.283281       
+4              2048           1048576        0.50118        0.398237       
+8              1024           8388608        0.661321       0.20381        
+8              1024           4194304        0.619992       0.23038        
+8              1024           2097152        0.572872       0.322687       
+8              1024           1048576        0.519506       0.511619       
+16             512            8388608        0.685362       0.189866       
+16             512            4194304        0.643276       0.236524       
+16             512            2097152        0.591739       0.357448       
+16             512            1048576        0.534649       0.651129       
+32             256            8388608        0.706476       0.197726       
+32             256            4194304        0.663013       0.276482       
+32             256            2097152        0.613232       0.524142       
+32             256            1048576        0.559945       0.946856       
+64             128            8388608        0.725402       0.200881       
+64             128            4194304        0.682627       0.317419       
+64             128            2097152        0.6377         0.596659       
+64             128            1048576        0.587293       1.4481         
+
+
+tested data length: 134217728
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           16777216       1.28671        0.515402       
+1              8192           8388608        1.20517        0.529675       
+1              8192           4194304        1.10931        0.551198       
+1              8192           2097152        1.00319        0.632298       
+2              4096           16777216       1.32884        0.48579        
+2              4096           8388608        1.24518        0.494377       
+2              4096           4194304        1.14964        0.550013       
+2              4096           2097152        1.04164        0.73715        
+4              2048           16777216       1.36564        0.446487       
+4              2048           8388608        1.28046        0.464037       
+4              2048           4194304        1.1837         0.562537       
+4              2048           2097152        1.07519        0.785748       
+8              1024           16777216       1.40233        0.410359       
+8              1024           8388608        1.32022        0.459357       
+8              1024           4194304        1.2233         0.632602       
+8              1024           2097152        1.10223        1.1598         
+16             512            16777216       1.44909        0.382756       
+16             512            8388608        1.36509        0.471062       
+16             512            4194304        1.2608         0.707969       
+16             512            2097152        1.14234        1.29332        
+32             256            16777216       1.48896        0.383612       
+32             256            8388608        1.40693        0.553805       
+32             256            4194304        1.30621        0.981307       
+32             256            2097152        1.18943        2.22906        
+64             128            16777216       1.52584        0.399795       
+64             128            8388608        1.44347        0.632904       
+64             128            4194304        1.35147        1.18387        
+64             128            2097152        1.2492         2.86451        
+
+
+tested data length: 268435456
+cache factor   block length   chunk size     merge time     multi way      
+1              8192           33554432       2.72726        1.03427        
+1              8192           16777216       2.57413        1.05607        
+1              8192           8388608        2.37752        1.09641        
+1              8192           4194304        2.15215        1.25739        
+2              4096           33554432       2.81446        0.975488       
+2              4096           16777216       2.64648        0.983666       
+2              4096           8388608        2.45127        1.08905        
+2              4096           4194304        2.22887        1.36946        
+4              2048           33554432       2.88368        0.892742       
+4              2048           16777216       2.72277        0.920999       
+4              2048           8388608        2.52961        1.10623        
+4              2048           4194304        2.30074        1.55868        
+8              1024           33554432       2.95826        0.817859       
+8              1024           16777216       2.79874        0.90105        
+8              1024           8388608        2.59979        1.23411        
+8              1024           4194304        2.37312        1.94706        
+16             512            33554432       3.04747        0.763893       
+16             512            16777216       2.89439        0.934134       
+16             512            8388608        2.68638        1.39403        
+16             512            4194304        2.44538        2.55127        
+32             256            33554432       3.13531        0.789198       
+32             256            16777216       2.97977        1.0589         
+32             256            8388608        2.77981        1.87897        
+32             256            4194304        2.53727        3.5674         
+64             128            33554432       3.20822        0.793284       
+64             128            16777216       3.05217        1.23924        
+64             128            8388608        2.86631        2.31328        
+64             128            4194304        2.65812        5.6148         
+
+
+data length    chunk merge    median merge   
+65536          0.000547918    5.54e-08       
+131072         0.00112069     4.94667e-08    
+262144         0.00222695     5.00333e-08    
+524288         0.0045551      3.58333e-08    
+1048576        0.00936264     0.00148618     
+2097152        0.0192038      0.00612511     
+4194304        0.0384533      0.0183489      
+8388608        0.0774926      0.0490891      
+16777216       0.153941       0.122259       
+33554432       0.316011       0.293941       
+67108864       0.622343       0.687161       
+134217728      1.23717        1.57039        
+268435456      2.47499        3.53461        
+
+
+data length    chunk merge    median merge   
+65536          0.000271166    4.98667e-08    
+131072         0.000565476    5.04667e-08    
+262144         0.00118713     5.01e-08       
+524288         0.00250769     5.69667e-08    
+1048576        0.00534982     0.000389435    
+2097152        0.0109882      0.00254666     
+4194304        0.0222467      0.00751495     
+8388608        0.0448665      0.0198795      
+16777216       0.0893316      0.0497728      
+33554432       0.192989       0.120704       
+67108864       0.360575       0.27565        
+134217728      0.778309       0.638731       
+268435456      1.5804         1.42135        
+536870912      3.16863        3.1609         
+1073741824     6.47453        6.93855        
+
+
+data length    chunk merge    median merge   
+65536          0.000271545    5.07667e-08    
+131072         0.000570788    5.11667e-08    
+262144         0.00119549     5.11e-08       
+524288         0.00253924     5.02e-08       
+1048576        0.00535922     0.000389715    
+2097152        0.0111765      0.00249574     
+4194304        0.0224939      0.00756799     
+8388608        0.0448751      0.0199402      
+16777216       0.0900073      0.0500369      
+33554432       0.179794       0.119083       
+67108864       0.381665       0.282689       
+134217728      0.767785       0.631541       
+268435456      1.61505        1.43729        
+536870912      3.23045        3.17628        
+1073741824     6.52457        6.86484        
+
+
+data length    chunk merge    median merge   
+65536          0.000273587    7.7e-08        
+131072         0.000564922    7.19999e-08    
+262144         0.00119615     6.8e-08        
+524288         0.00256457     7.70001e-08    
+1048576        0.00555224     0.000362935    
+2097152        0.011228       0.00241477     
+4194304        0.0235444      0.00764499     
+8388608        0.045101       0.0229022      
+16777216       0.0925747      0.0515739      
+33554432       0.183255       0.12167        
+67108864       0.499395       0.311786       
+134217728      0.921238       0.747846       
+268435456      1.48401        1.41192        
+536870912      2.92084        3.17602        
+1073741824     6.04267        6.93515        
+
+
+data length    chunk merge    median merge   
+65536          0.000272105    5.32333e-08    
+131072         0.000565253    4.98333e-08    
+262144         0.00118981     4.98e-08       
+524288         0.00254097     5.44e-08       
+1048576        0.00533636     0.000371534    
+2097152        0.0111504      0.00254936     
+4194304        0.0222574      0.00758088     
+8388608        0.0447224      0.0199744      
+16777216       0.0891882      0.0496279      
+33554432       0.179942       0.119356       
+67108864       0.379339       0.286097       
+134217728      0.761701       0.629168       
+268435456      1.59992        1.43132        
+536870912      3.22915        3.14604        
+1073741824     6.55137        6.90828        
+
+
+data length    chunk merge    median merge   
+65536          0.000307906    7.90001e-08    
+131072         0.00056635     6.6e-08        
+262144         0.00119792     6.29999e-08    
+524288         0.00256835     5.6e-08        
+1048576        0.00540661     0.000377615    
+2097152        0.0109779      0.00249644     
+4194304        0.0233828      0.00759136     
+8388608        0.0469223      0.0219053      
+16777216       0.10934        0.0568122      
+33554432       0.183382       0.118986       
+67108864       0.357385       0.275537       
+134217728      0.718859       0.62915        
+268435456      1.43716        1.44174        
+536870912      2.90528        3.22837        
+1073741824     5.82536        6.98351        
+
+
+data length    chunk merge    median merge   
+65536          0.000269421    5.11333e-08    
+131072         0.000564611    4.97667e-08    
+262144         0.00118741     5.05667e-08    
+524288         0.00251136     5.54667e-08    
+1048576        0.00533137     0.00035084     
+2097152        0.0110272      0.00254035     
+4194304        0.0222526      0.00753907     
+8388608        0.0449693      0.0198581      
+16777216       0.0897008      0.0495766      
+33554432       0.180566       0.120573       
+67108864       0.367901       0.279669       
+134217728      0.763781       0.6367         
+268435456      1.58723        1.42278        
+536870912      3.13081        3.15926        
+1073741824     6.37887        6.84821        
+
+
+data length    chunk merge    median merge   
+65536          0.00869768     5.54e-08       
+131072         0.0149218      5.14667e-08    
+262144         0.0266651      6.89e-08       
+524288         0.00794115     5.74e-08       
+1048576        0.00904058     0.000862611    
+2097152        0.0158698      0.0034405      
+4194304        0.0357005      0.00877455     
+8388608        0.0615153      0.0224633      
+16777216       0.103431       0.0693338      
+33554432       0.178643       0.118226       
+67108864       0.377251       0.278073       
+134217728      0.744718       0.635555       
+268435456      1.52569        1.41465        
+536870912      3.08483        3.17238        
+1073741824     6.17585        6.83861        
+
+
+data length    chunk merge    median merge   
+65536          0.000269956    4.99e-08       
+131072         0.000563131    4.98667e-08    
+262144         0.00119133     4.95e-08       
+524288         0.0025104      4.90667e-08    
+1048576        0.00537229     0.000362168    
+2097152        0.0112108      0.00255482     
+4194304        0.0222725      0.00755945     
+8388608        0.0447003      0.0200591      
+16777216       0.0895114      0.0500608      
+33554432       0.178821       0.119813       
+67108864       0.377921       0.286274       
+134217728      0.749581       0.63533        
+268435456      1.57823        1.43813        
+536870912      3.13998        3.18641        
+1073741824     6.45404        6.95848        
+
+
+
+gpu kernel and transfer test
+data length    transfer time  kernel time    
+131072         0.171136       0.920992       
+262144         0.278688       1.23904        
+524288         0.428256       1.84832        
+1048576        0.772896       3.12122        
+2097152        1.38941        5.64931        
+4194304        2.70902        10.7423        
+8388608        5.35942        20.9058        
+16777216       10.5784        41.2332        
+33554432       21.3303        81.388         
+67108864       42.4772        163.448        
+134217728      83.7184        327.347        
+
+
+gpu kernel and transfer test
+data length    transfer time  kernel time    
+131072         0.139693       0.645861       
+262144         0.267403       1.00632        
+524288         0.432259       1.64044        
+1048576        0.76247        2.92104        
+2097152        1.42201        5.43771        
+4194304        2.73591        10.529         
+8388608        5.36332        20.7026        
+16777216       10.6202        41.1297        
+33554432       21.1348        81.6049        
+67108864       42.16          163.207        
+134217728      84.213         327.713        
+
+
+data length    multiBlockLen  multiChunkLen  merge time     multiway time  
+65536          32             32768          0.000267021    0.000350157    
+65536          128            32768          0.000264635    0.000168557    
+65536          512            32768          0.000263078    0.000146265    
+65536          2048           32768          0.000262486    0.000166807    
+131072         32             65536          0.000536704    0.000694103    
+131072         128            65536          0.00053719     0.000328794    
+131072         512            65536          0.000536505    0.000287742    
+131072         2048           65536          0.000537077    0.000330037    
+131072         8192           65536          0.000800317    0.000396427    
+262144         32             131072         0.00112293     0.00138076     
+262144         128            131072         0.00112447     0.000651582    
+262144         512            131072         0.00112503     0.000571318    
+262144         2048           131072         0.00112354     0.000658968    
+262144         8192           131072         0.00112283     0.00078354     
+524288         32             262144         0.00238162     0.0027662      
+524288         128            262144         0.00238377     0.00130972     
+524288         512            262144         0.00237723     0.00113785     
+524288         2048           262144         0.00238402     0.00131505     
+524288         8192           262144         0.00238153     0.00155875     
+524288         32768          262144         0.00238245     0.00183408     
+1048576        32             524288         0.00532822     0.00560927     
+1048576        128            524288         0.00532392     0.00273446     
+1048576        512            524288         0.00532427     0.00265555     
+1048576        2048           524288         0.00532188     0.00309163     
+1048576        8192           524288         0.00532353     0.00361733     
+1048576        32768          524288         0.00532009     0.00416111     
+2097152        32             524288         0.0110268      0.0128033      
+2097152        128            524288         0.0110039      0.00603518     
+2097152        512            524288         0.0110036      0.00562124     
+2097152        2048           524288         0.0110064      0.0063705      
+2097152        8192           524288         0.0110196      0.00732005     
+2097152        32768          524288         0.0110095      0.00843335     
+4194304        32             524288         0.0222517      0.0318786      
+4194304        128            524288         0.0222579      0.0151276      
+4194304        512            524288         0.022261       0.0116821      
+4194304        2048           524288         0.0222541      0.0125488      
+4194304        8192           524288         0.0222424      0.0142789      
+4194304        32768          524288         0.0222601      0.0163311      
+8388608        32             524288         0.0535101      0.112358       
+8388608        128            524288         0.0446523      0.0443099      
+8388608        512            524288         0.0446568      0.0289094      
+8388608        2048           524288         0.0446427      0.0262761      
+8388608        8192           524288         0.0450869      0.0285958      
+8388608        32768          524288         0.0449546      0.0321087      
+16777216       32             524288         0.0896439      0.35399        
+16777216       128            524288         0.0895687      0.157728       
+16777216       512            524288         0.0995677      0.0911457      
+16777216       2048           524288         0.103357       0.0696692      
+16777216       8192           524288         0.0927851      0.0647995      
+16777216       32768          524288         0.093432       0.0701487      
+33554432       32             524288         0.186259       1.42238        
+33554432       128            524288         0.187372       0.771843       
+33554432       512            524288         0.186449       0.353211       
+33554432       2048           524288         0.186301       0.214808       
+33554432       8192           524288         0.186711       0.166798       
+33554432       32768          524288         0.202875       0.167152       
+67108864       32             524288         0.382533       4.9261         
+67108864       128            524288         0.389357       3.36098        
+67108864       512            524288         0.385934       1.59507        
+67108864       2048           524288         0.392369       0.884995       
+67108864       8192           524288         0.382229       0.578525       
+67108864       32768          524288         0.384886       0.491314       
+134217728      32             524288         0.819816       22.9826        
+134217728      128            524288         0.802908       17.5129        
+134217728      512            524288         0.801999       10.3984        
+134217728      2048           524288         0.805554       5.66473        
+134217728      8192           524288         0.81586        3.52516        
+134217728      32768          524288         0.798603       2.80697        
+
+
+data length    single merge   multiway merge 
+65536          0.000220261    7.19064e-05    
+131072         0.000434338    0.000138221    
+262144         0.00094814     0.00026822     
+524288         0.00207819     0.000571837    
+
+
+data length    single merge   multiway merge 
+1048576        0.00573345     0.000616092    
+2097152        0.0118479      0.00251112     
+4194304        0.0236944      0.00527012     
+8388608        0.0469936      0.0134505      
+
+
+data length    single merge   multiway merge 
+1048576        0.0067727      0.000844096    
+2097152        0.0148068      0.00291437     
+4194304        0.0238397      0.00526719     
+8388608        0.0466262      0.0132791      
+16777216       0.0937417      0.0355385      
+33554432       0.189824       0.130763       
+67108864       0.390425       0.654368       
+
+
+multiway merge set result
+data length    single merge   multiway merge 
+1048576        0.00691848     0.00171373     
+2097152        0.0148824      0.00517352     
+4194304        0.024853       0.00673331     
+8388608        0.047081       0.0158574      
+16777216       0.0932115      0.0441971      
+33554432       0.191951       0.157806       
+
+
+multiway merge set result
+data length    single merge   multiway merge 
+67108864       0.387092       0.733861       
+134217728      0.801664       4.28061        
+268435456      1.56307        30.9723        
+
+
+hybrid sort results: data length    merge step     multiway step  
+65536          0.00535825     0.00289391     
+131072         0.00690374     0.00317454     
+262144         0.00869434     0.00291333     
+524288         0.0084389      0.00483055     
+1048576        0.0110345      0.00592056     
+2097152        0.0173916      0.00774107     
+4194304        0.0352842      0.012802       
+8388608        0.0698675      0.0197533      
+16777216       0.165099       0.0381353      
+33554432       0.425828       0.0692459      
+67108864       0.295027       0.203678       
+134217728      0.66407        0.406209       
+268435456      1.45082        0.761947       
+536870912      3.04269        1.53055        
+1073741824     6.29474        3.06783        
+
+
+hybrid sort results: 
+data length    merge step     multiway step  
+65536          0.00826145     0.00475994     
+131072         0.00517522     0.00347213     
+262144         0.0109787      0.00474471     
+524288         0.00704683     0.00412475     
+1048576        0.0119094      0.00564442     
+2097152        0.0190286      0.00831901     
+4194304        0.0352597      0.0117401      
+8388608        0.0679898      0.0194876      
+16777216       0.152989       0.038507       
+33554432       0.367761       0.0713708      
+67108864       0.317111       0.205292       
+134217728      0.687775       0.409269       
+268435456      1.54415        0.767636       
+536870912      3.33993        1.54227        
+1073741824     7.10542        3.07355        
+
+
+hybrid sort results: 
+data length    merge step     multiway step  
+65536          0.0136789      0.000989605    
+131072         0.00991377     0.00834979     
+262144         0.00786521     0.00426768     
+524288         0.00897562     0.00504092     
+1048576        0.00784861     0.00691316     
+2097152        0.0237955      0.00723303     
+4194304        0.0371275      0.0100613      
+8388608        0.0907385      0.0174575      
+16777216       0.189261       0.0374946      
+33554432       0.350968       0.0691235      
+67108864       0.366774       0.206649       
+134217728      0.70638        0.41287        
+268435456      1.52406        0.766528       
+536870912      3.13365        1.54775        
+1073741824     7.34454        3.07517        
+
+
+hybrid sort results: 
+data length    merge step     multiway step  
+65536          0.00205745     0.00157192     
+131072         0.00717536     0.00382552     
+262144         0.0052303      0.00141323     
+524288         0.00607841     0.00415244     
+1048576        0.00976632     0.0080045      
+2097152        0.0228959      0.00865584     
+4194304        0.0548668      0.0136829      
+8388608        0.0863465      0.0192759      
+16777216       0.200324       0.038421       
+33554432       0.629729       0.0712279      
+67108864       0.456784       0.205505       
+134217728      1.02634        0.406996       
+268435456      2.19341        0.765129       
+536870912      4.45296        1.52744        
+1073741824     8.8635         3.06567        
+
+
+hybrid sort results: 
+data length    merge step     multiway step  
+65536          0.00427557     0.0036597      
+131072         0.00570822     0.00340612     
+262144         0.00675422     0.00350902     
+524288         0.0103427      0.00572702     
+1048576        0.0107571      0.00597563     
+2097152        0.024577       0.00808585     
+4194304        0.0484052      0.0217713      
+8388608        0.0991626      0.0253419      
+16777216       0.19605        0.0373594      
+33554432       0.565508       0.0715684      
+67108864       0.499548       0.205653       
+134217728      0.954213       0.415184       
+268435456      1.95999        0.771517       
+536870912      3.86388        1.5495         
+1073741824     8.2208         3.07344        
+
+
+hybrid sort results: 
+data length    merge step     multiway step  
+65536          0.00996623     0.00201328     
+131072         0.0096833      0.00489165     
+262144         0.00808937     0.00161335     
+524288         0.0067589      0.00393648     
+
+
+hybrid sort results: 
+data length    merge step     multiway step  
+1048576        0.0091831      0.00371768     
+2097152        0.0208761      0.0100232      
+
+
+hybrid sort results: 
+data length    merge step     multiway step  
+4194304        0.0392619      0.015293       
+8388608        0.0918208      0.0351494      
+
+
+hybrid sort results: 
+data length    merge step     multiway step  
+4194304        0.0372812      0.0150939      
+8388608        0.0877132      0.0236137      
+
+
+hybrid sort results: 
+data length    merge step     multiway step  
+16777216       0.183268       0.0386103      
+33554432       0.467256       0.0754488      
+
+
+data length    chunk merge    median merge   
+16777216       0.386564       0.110552       
+33554432       0.756368       0.28709        
+
+
+data length    chunk merge    median merge   
+16777216       0.354199       0.104942       
+33554432       0.713068       0.270777       
+
+
+data length    chunk merge    median merge   
+65536          0.000566071    5.58667e-08    
+131072         0.00093774     5.63667e-08    
+262144         0.0015634      5.7e-08        
+524288         0.0029159      7.88e-08       
+1048576        0.00613277     0.000508061    
+2097152        0.0126128      0.00296179     
+4194304        0.0253428      0.00844958     
+8388608        0.0509365      0.022226       
+data length    chunk merge    median merge   
+65536          0.000269467    5.72667e-08    
+131072         0.000565356    5.88e-08       
+262144         0.00120152     6.12e-08       
+524288         0.00253201     1.069e-07      
+1048576        0.0053471      0.000369616    
+2097152        0.0111541      0.00253831     
+4194304        0.022371       0.00752407     
+8388608        0.0449299      0.0199437      
+16777216       0.0894193      0.049579       
+33554432       0.179021       0.118684       
+67108864       0.37266        0.2823         
+134217728      0.725086       0.629923       
+268435456      1.54066        1.42711        
+536870912      3.05274        3.14408        
+1073741824     6.25635        6.83867        
+
+
+hybrid sort results: 
+data length    merge step     multiway step  
+65536          0.00406311     0.00339019     
+131072         0.00566594     0.00354038     
+262144         0.00664325     0.00354975     
+524288         0.00768571     0.0051597      
+1048576        0.0102762      0.00603477     
+2097152        0.0175931      0.00767525     
+4194304        0.0344766      0.0120159      
+8388608        0.0700057      0.0199559      
+16777216       0.144554       0.0371846      
+33554432       0.339789       0.0708295      
+67108864       0.307671       0.205175       
+134217728      0.66091        0.407991       
+268435456      1.48001        0.768356       
+hybrid sort results: 
+data length    merge step     multiway step  
+65536          0.00580693     0.00296492     
+131072         0.00718548     0.00282338     
+262144         0.00800114     0.00307657     
+524288         0.00786083     0.00516707     
+1048576        0.0104121      0.00582262     
+2097152        0.0176726      0.00817102     
+4194304        0.0344686      0.0121284      
+8388608        0.0696518      0.0204692      
+16777216       0.172135       0.0398585      
+33554432       0.421436       0.0693765      
+67108864       0.289293       0.202884       
+134217728      0.649823       0.406301       
+268435456      1.42081        0.764491       
+hybrid sort results: 
+data length    merge step     multiway step  
+65536          0.00513949     0.00277932     
+131072         0.00690698     0.00289363     
+262144         0.00853323     0.00258753     
+524288         0.00886138     0.00528424     
+1048576        0.0111469      0.00610424     
+2097152        0.0181128      0.00827866     
+4194304        0.0348373      0.0119017      
+8388608        0.069362       0.0202979      
+16777216       0.170303       0.0395844      
+33554432       0.422875       0.069594       
+67108864       0.288605       0.204099       
+134217728      0.6375         0.406438       
+268435456      1.41645        0.76352        
+hybrid sort results: 
+data length    merge step     multiway step  
+65536          0.00577448     0.00239467     
+131072         0.00647072     0.0027008      
+262144         0.00876094     0.00236452     
+524288         0.00790425     0.00497445     
+1048576        0.0102963      0.00610517     
+2097152        0.0177889      0.00830226     
+4194304        0.0332927      0.012302       
+8388608        0.0671845      0.0202198      
+16777216       0.169013       0.0411122      
+33554432       0.410017       0.0693869      
+67108864       0.293274       0.203595       
+134217728      0.643236       0.405127       
+268435456      1.41616        0.761983       
+hybrid sort results: 
+data length    merge step     multiway step  
+65536          0.00388602     0.0027326      
+131072         0.00452822     0.00268246     
+262144         0.00598637     0.00293137     
+524288         0.00585251     0.00401147     
+1048576        0.00797203     0.00476572     
+2097152        0.013227       0.00771607     
+4194304        0.0257328      0.0117541      
+8388608        0.0528839      0.0202754      
+16777216       0.106889       0.0378237      
+33554432       0.221658       0.0701295      
+67108864       0.254564       0.204323       
+134217728      0.526047       0.406111       
+268435456      1.08537        0.77085        
+hybrid sort results: 
+data length    merge step     multiway step  
+65536          0.00583465     0.00272446     
+131072         0.0065461      0.00331096     
+262144         0.011122       0.00292854     
+524288         0.00786262     0.00543407     
+1048576        0.00835744     0.00573811     
+2097152        0.0174057      0.00770134     
+4194304        0.0335805      0.0129497      
+8388608        0.0713762      0.0194326      
+16777216       0.147167       0.0371299      
+33554432       0.412134       0.0689042      
+67108864       0.306282       0.204397       
+134217728      0.644561       0.408796       
+268435456      1.43534        0.770136       
+536870912      2.913          1.54232        
+
+
+hybrid sort results: 
+data length    merge step     multiway step  
+65536          0.00424773     0.00383132     
+131072         0.00670882     0.00175229     
+262144         0.00876705     0.00395632     
+524288         0.00861783     0.00483646     
+1048576        0.0101683      0.00785284     
+2097152        0.0173147      0.00883714     
+4194304        0.0376294      0.0148415      
+8388608        0.0792355      0.0205168      
+16777216       0.157716       0.0368891      
+33554432       0.443545       0.0687501      
+67108864       0.300071       0.205283       
+134217728      0.654949       0.410499       
+268435456      1.41849        0.769953       
+536870912      3.05947        1.5405         
+1073741824     6.38131        3.08743        
+
+
+hybrid sort results: 
+data length    merge step     multiway step  
+65536          0.00838282     9.164e-08      
+131072         0.00727749     8.49e-08       
+262144         0.00946038     1.0122e-07     
+524288         0.00750326     0.00508791     
+1048576        0.00987242     0.00560769     
+2097152        0.0175561      0.00812759     
+4194304        0.0344156      0.0129299      
+8388608        0.0632773      0.0199295      
+16777216       0.131682       0.0366955      
+33554432       0.45296        0.0697284      
+67108864       0.309612       0.205475       
+134217728      0.719654       0.406911       
+268435456      1.66269        0.771168       
+hybrid sort results: 
+data length    merge step     multiway step  
+65536          0.00549032     7.14201e-08    
+131072         0.00755821     8.56999e-08    
+262144         0.00868234     9.51001e-08    
+524288         0.00810661     0.00491915     
+1048576        0.00968033     0.00542671     
+2097152        0.0171788      0.00794347     
+4194304        0.033459       0.0122594      
+8388608        0.0722165      0.0210103      
+16777216       0.174633       0.0390567      
+33554432       0.42941        0.0694238      
+67108864       0.299625       0.203573       
+134217728      0.670185       0.406181       
+268435456      1.44906        0.767585       
+536870912      3.11552        1.53804        
+1073741824     8.82385        3.07893        
+
+
+hybrid sort results: 
+data length    merge step     multiway step  
+65536          0.00788666     1.2038e-07     
+131072         0.00754877     9.686e-08      
+262144         0.00986442     1.177e-07      
+524288         0.0084556      0.00514509     
+1048576        0.0106072      0.00553636     
+2097152        0.0170338      0.00849061     
+4194304        0.0346772      0.0127702      
+8388608        0.0688383      0.0200995      
+16777216       0.171788       0.0400533      
+33554432       0.425252       0.0697835      
+67108864       0.291641       0.204216       
+134217728      0.648723       0.408271       
+268435456      1.44373        0.769361       
+536870912      3.26469        1.53724        
+1073741824     6.90961        3.07121        
+
+
+data length    chunk merge    median merge   
+268435456      1.47884        1.46599        
+
+
+data length    chunk merge    median merge   
+data length    chunk merge    median merge   
+data length    chunk merge    median merge   
+65536          0.00031135     5.74e-08       
+131072         0.000887114    6.15333e-08    
+262144         0.0014527      5.87e-08       
+524288         0.00309865     7.76667e-08    
+1048576        0.00665217     0.000603131    
+2097152        0.0141861      0.0032691      
+4194304        0.0282295      0.009939       
+8388608        0.0614731      0.0266153      
+data length    chunk merge    median merge   
+65536          0.000273687    6.08667e-08    
+131072         0.00168309     7.10667e-08    
+262144         0.00141308     7.70667e-08    
+524288         0.00292997     7.99e-08       
+1048576        0.00574731     0.000413497    
+2097152        0.0116802      0.00253784     
+4194304        0.0226813      0.00790961     
+8388608        0.0457515      0.0201816      
+16777216       0.0905886      0.0496928      
+33554432       0.189042       0.119004       
+67108864       0.367721       0.285423       
+134217728      0.767415       0.635308       
+268435456      1.61275        1.44758        
+536870912      3.3436         3.20828        
+1073741824     6.69271        7.07722        
+
+
+data length    chunk merge    median merge   
+65536          0.000270079    5.77e-08       
+131072         0.0006593      5.92666e-08    
+262144         0.00129346     5.86e-08       
+524288         0.00267251     5.94666e-08    
+1048576        0.00569147     0.000401891    
+2097152        0.0114062      0.00267939     
+4194304        0.0227329      0.00767425     
+8388608        0.0461074      0.0202029      
+16777216       0.0914237      0.0516633      
+33554432       0.186215       0.119177       
+67108864       0.364612       0.277418       
+134217728      0.769121       0.64119        
+268435456      1.59243        1.45605        
+536870912      3.24485        3.19367        
+1073741824     6.64268        6.98853        
+
+
+cpu merge test results
+data length    chunk merge    multiway merge 
+65536          0.000270709    5.718e-08      
+131072         0.000565127    5.588e-08      
+262144         0.00118005     5.492e-08      
+524288         0.00252183     6.96e-08       
+1048576        0.00529187     0.0015196      
+2097152        0.0111904      0.00300949     
+4194304        0.0220835      0.00553792     
+8388608        0.0443962      0.0138511      
+16777216       0.0887756      0.0413232      
+33554432       0.177817       0.103235       
+67108864       0.388059       0.186242       
+134217728      0.781342       0.444569       
+268435456      1.59038        1.15536        
+536870912      3.23876        2.68365        
+1073741824     6.54855        5.0824         
+
+
+cpu merge test results
+data length    chunk merge    multiway merge 
+65536          0.000269666    5.7e-08        
+131072         0.000565362    5.612e-08      
+262144         0.00118499     5.638e-08      
+524288         0.00252147     5.976e-08      
+1048576        0.00532756     0.00139131     
+2097152        0.011017       0.00331947     
+4194304        0.0222543      0.00572198     
+8388608        0.0443629      0.0137044      
+16777216       0.0888305      0.0400426      
+33554432       0.177794       0.105747       
+67108864       0.381907       0.194717       
+134217728      0.772471       0.45049        
+268435456      1.60573        1.1587         
+536870912      3.29753        2.63797        
+1073741824     6.59176        5.186          
+
+
+cpu merge test results
+data length    chunk merge    multiway merge 
+65536          0.000268206    5.582e-08      
+131072         0.000563184    5.592e-08      
+262144         0.00118099     5.604e-08      
+524288         0.00251867     6.534e-08      
+1048576        0.00530546     0.00137891     
+2097152        0.0110928      0.00351889     
+4194304        0.0221133      0.00558215     
+8388608        0.0444484      0.0135977      
+16777216       0.0887797      0.0417928      
+33554432       0.178349       0.10166        
+67108864       0.389625       0.196995       
+134217728      0.788352       0.453703       
+268435456      1.61239        1.1355         
+536870912      3.24683        2.67707        
+1073741824     6.54787        5.12687        
+
+
+cpu merge test results 5 replica
+data length    chunk merge    multiway merge 
+65536          0.000274112    4.47999e-08    
+131072         0.000566938    4.24e-08       
+262144         0.00134726     5.02e-08       
+524288         0.00306153     4.79999e-08    
+1048576        0.00618887     5.8e-08        
+2097152        0.0172153      5.13999e-08    
+cpu merge test results 5 replica
+data length    chunk merge    multiway merge 
+65536          0.000693542    5e-08          
+131072         0.000593415    4.38e-08       
+262144         0.00187418     1.034e-07      
+524288         0.00274762     5.12e-08       
+1048576        0.0063748      7.26e-08       
+2097152        0.014445       6.72e-08       
+4194304        0.023424       0.00567538     
+8388608        0.0515446      0.0138402      
+16777216       0.0925011      0.042269       
+33554432       0.186997       0.104829       
+67108864       0.365674       0.191544       
+134217728      0.728538       0.434335       
+268435456      1.50045        1.05701        
+536870912      3.08833        2.5947         
+1073741824     6.59826        4.98587        
+
+
+cpu merge test results
+data length    chunk merge    multiway merge 
+65536          0.00026897     4.614e-08      
+131072         0.000564282    4.766e-08      
+262144         0.00118396     5.064e-08      
+524288         0.00251854     4.872e-08      
+1048576        0.00571485     6.052e-08      
+2097152        0.0137335      5.912e-08      
+4194304        0.0222362      0.00565383     
+8388608        0.0449629      0.0136799      
+16777216       0.0892215      0.0419758      
+33554432       0.178331       0.104341       
+67108864       0.389743       0.193178       
+134217728      0.798254       0.45844        
+268435456      1.60057        1.14128        
+536870912      3.25119        2.63423        
+1073741824     6.55064        5.1366         
+
+
+hybrid sort results: 
+data length    merge step     multiway step  
+65536          0.00829349     6.746e-08      
+131072         0.00677714     5.918e-08      
+262144         0.0077165      7.386e-08      
+524288         0.00845282     3.70617e-05    
+1048576        0.00976964     0.00504299     
+2097152        0.0157758      0.0068412      
+4194304        0.0279885      0.00934635     
+8388608        0.031714       0.0111256      
+16777216       0.0578184      0.012989       
+33554432       0.111202       0.0228914      
+67108864       0.233668       0.0746959      
+134217728      0.474573       0.151023       
+268435456      0.955178       0.343164       
+536870912      2.00626        0.678863       
+1073741824     3.74588        1.33728        
+
+
