@@ -1,9 +1,11 @@
 #include "sse_sort.h"
 
-// data length must be 32, this function will produce 8 sorted sequence of 
-// length 4
+	// data length must be 32, this function will produce 8 sorted sequence of 
+	// length 4
+
 void simdOddEvenSort(__m128 *rData)
-{    //odd even sort lanes, then transpose them
+{   	 //	odd even sort lanes, then transpose them
+	
     const int pairSize = rArrayLen >> 1;
     __m128 temp[pairSize];
     for (int i = 0; i < pairSize; ++i) temp[i] = rData[2 * i];
@@ -30,14 +32,16 @@ void simdOddEvenSort(__m128 *rData)
         rData[i + 1] = _mm_max_ps(rData[i + 1], temp[i >> 1]);
     }
 	
-    //TODO:portability?
+    	// TODO:portability?
+	
     for (int i = 0; i < rArrayLen >> 2; ++i) temp[i] = rData[i * 4 + 1];
     for (int i = 1; i < rArrayLen; i += 4)
         rData[i] = _mm_min_ps(rData[i], rData[i + 1]);
     for (int i = 2; i < rArrayLen; i += 4)
         rData[i] = _mm_max_ps(rData[i], temp[i >> 2]);
 	
-    //temp,0,1,2,3
+    	// temp,0,1,2,3
+	
     for (int i = 0; i < rArrayLen; i += 2)
         temp[i >> 1] = _mm_shuffle_ps(rData[i], rData[i + 1], 0x44);
     //rdata,1,3,5,7
@@ -59,6 +63,7 @@ void simdOddEvenSort(__m128 *rData)
 }
 
 void sortInRegister(float *data)
+	
 {
     __m128 rData[rArrayLen];
     loadData(data, rData, rArrayLen);
@@ -73,4 +78,3 @@ void sortInRegister(float *data)
 	
     storeData(data, rData, rArrayLen);
 }
-
