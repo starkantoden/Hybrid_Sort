@@ -644,10 +644,11 @@ void hybrid_sort3(float *data, size_t dataLen, double (&results)[2])
 	_mm_free(dataOut);
 }
 
-//if use same buffer store partial sorted data and run multi-way merge, then
-//multi-way merge may overwrite data that is not merged yet, result to a wrong
-//data list.
-//TODO:does use task generation process can improve performance?
+	//	if use same buffer store partial sorted data and run multi-way merge, then
+	//	multi-way merge may overwrite data that is not merged yet, result to a wrong
+	//	data list.
+	//	TODO:does use task generation process can improve performance?
+
 void multiWayMergeCPU(DoubleBuffer<float> &data, size_t *upperBound,
 					  size_t chunkNum, hybridDispatchParams3<float> params)
 {
@@ -658,8 +659,10 @@ void multiWayMergeCPU(DoubleBuffer<float> &data, size_t *upperBound,
     size_t *loopLBound = new size_t[chunkNum * params.threads];
 	DoubleBuffer<size_t> bound(loopLBound, loopUBound);
 	size_t *quantileSet = new size_t[chunkNum * (blockNum + 1)];
-	//TODO: initial of first array of quantile must all move into quantile
-	//compute functions.
+	
+	//	TODO: initial of first array of quantile must all move into quantile
+	//	compute functions.
+	
 	quantileSet[0] = 0;
 	std::copy(upperBound, upperBound + chunkNum - 1, quantileSet + 1);
 	quantileSetCompute(data, quantileSet, bound, upperBound, chunkNum,
@@ -667,6 +670,7 @@ void multiWayMergeCPU(DoubleBuffer<float> &data, size_t *upperBound,
 	float *mwBuffer = (float*)_mm_malloc(params.cpuChunkLen * sizeof(float), 16);
 	float **start = new float*[chunkNum * params.threads];
 	float **end   = new float*[chunkNum * params.threads];
+	
 	/*for(size_t i = 0; i < (blockNum + 1); ++i)
 	  {
 	  size_t index = i * chunkNum;
@@ -685,31 +689,37 @@ void multiWayMergeCPU(DoubleBuffer<float> &data, size_t *upperBound,
 	  std::cout << quantileSet[index + j] << " ";
 	  }
 	  }*/
-	//std::cout << "quantile set compute complete.\n";
-	//synchronize problem is the reason that parallel for loop cannot be
-	//used. otherwise multi-thread may sort data in same position. this
-	//version use static temp buffer for each thread to solve the problem,
-	//which may not be best performance.
-	//TODO: try circular buffer and/or parallel task to get the best
-	//perfomance solution.
+	
+	//	std::cout << "quantile set compute complete.\n";
+	//	synchronize problem is the reason that parallel for loop cannot be
+	//	used. otherwise multi-thread may sort data in same position. this
+	//	version use static temp buffer for each thread to solve the problem,
+	//	which may not be best performance.
+	//	TODO: try circular buffer and/or parallel task to get the best
+	//	perfomance solution.
+	
 #pragma omp parallel for schedule(dynamic)
 	for(size_t j = 0; j < blockNum; ++j)
 	{
 		int w = omp_get_thread_num();
 		std::vector<float> unalignVec;
 		DoubleBuffer<size_t> quantile(quantileSet + j * chunkNum,
-									  quantileSet + j * chunkNum + chunkNum);
+				 quantileSet + j * chunkNum + chunkNum);
+		
 		//std::cout << j << std::endl;
 		/*std::cout << quantile.buffers[0][0] << " " << quantile.buffers[0][1]
 				  << " " << quantile.buffers[0][2] << std::endl
 				  << quantile.buffers[1][0] << " " << quantile.buffers[1][1]
 				  << " " << quantile.buffers[1][2] << std::endl;*/
+		
 		multiWayMergeBitonic(data, chunkNum, mwBuffer + w * params.cpuBlockLen,
 							 j * params.cpuBlockLen, quantile, unalignVec,
 							 start + w * chunkNum, end + w * chunkNum);
 	}
+	
 	/*std::copy(quantileSet + chunkNum * params.threads,
 	  quantileSet + chunkNum * (params.threads + 1), quantileSet);*/
+	
 	delete [] loopUBound;
 	delete [] loopLBound;
 	delete [] quantileSet;
@@ -786,12 +796,13 @@ void hybridMergeStep(DoubleBuffer<float> &data,
 	if(params.gpuPart) cudaDeviceSynchronize();
 }
 
-//TODO: cpu may not sort to one part, it may have several small parts.
-//this can be decided by test GPU and CPU perfomance. how to guarantee
-//portable?
-//or is there a method to notify CPU, let it terminate sort work, though
-//it may produce a more irregular upperbound, it does not matter to
-//multiwaymerge.
+	//	TODO: cpu may not sort to one part, it may have several small parts.
+	//	this can be decided by test GPU and CPU perfomance. how to guarantee
+	//	portable?
+	//	or is there a method to notify CPU, let it terminate sort work, though
+	//	it may produce a more irregular upperbound, it does not matter to
+	//	multiwaymerge.
+
 void hybridMultiWayStep(DoubleBuffer<float> &data, size_t *upperBound,
 						size_t chunkNum, hybridDispatchParams3<float> &params)
 {
@@ -917,13 +928,17 @@ void hybrid_sort_test(size_t minLen, size_t maxLen, int seed)
 			end = omp_get_wtime();
 			hmulti += (end - start);
 		}
-		//cudaDeviceReset();
+		
+		//	cudaDeviceReset();
+		
 		rFile << boost::format("%1%%|15t|") % dataLen
 			  << boost::format("%1%%|15t|") % (hmerge / test_time)
 			  << boost::format("%1%%|15t|") % (hmulti / test_time)
 			  << std::endl;
 		delete [] uBound;
-		//std::cout << "hmerge: " << hmerge << " hmulti: " << hmulti << std::endl;
+		
+		//	std::cout << "hmerge: " << hmerge << " hmulti: " << hmulti << std::endl;
+		
 		std::cout << dataLen << " test complete." << std::endl;
 	}
 	rFile << std::endl << std::endl;
