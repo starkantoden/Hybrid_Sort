@@ -1,8 +1,8 @@
 /*
  * cpu_sort.h
  *
- *  Created on: 2013-11-13
- *      Author: aloneranger
+ *  Created on: 2017-04-13
+ *      Author: starkantoden
  */
 
 #ifndef CPU_SORT_H_
@@ -88,4 +88,3 @@ void quantileCompute(float *data, DoubleBuffer<rsize_t> &quantile,
 					 bool initial = false);
 
 #endif /* CPU_SORT_H_ */
-
