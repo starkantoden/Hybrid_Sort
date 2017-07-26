@@ -1,4 +1,5 @@
 /* sort functions using double buffer class */
+
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -12,7 +13,8 @@
 
 int getMergeStartBuffer(size_t chunkNum, int endBuffer);
 
-//insert sort, and search process use binary search.
+	// insert sort, and search process use binary search.
+
 void insertBinarySort(float *data, size_t dataLen)
 {
 	for (size_t j = 1; j < dataLen; ++j)
@@ -46,8 +48,9 @@ void insertBinarySort(float *data, size_t dataLen)
 	
 }
 
-//TODO:modify to a version that compliant with STL style. replace above pointer
-//funtion.
+	// TODO:modify to a version that compliant with STL style. replace above pointer
+	// funtion.
+
 void insertBinarySortVec(std::vector<float> &data)
 {
 	std::vector<float>::iterator it = data.begin();
@@ -71,10 +74,12 @@ void insertBinarySortVec(std::vector<float> &data)
 			if (data[j] > data[low])
 				++low;
 			float temp = data[j];
-			//In std::copy function, pointers or iterators cannot
-			//overlap, in this case must use copy_backward.
-			//there is no exception be showed, but result may not
-			//be correct.
+			
+				// In std::copy function, pointers or iterators cannot
+				// overlap, in this case must use copy_backward.
+				// there is no exception be showed, but result may not
+				// be correct.
+			
 			std::copy_backward(it + low, it + j, it + j + 1);
 			data[low] = temp;
 		}
@@ -120,8 +125,9 @@ void mergeInRegister(DoubleBuffer<float> &data, size_t dataLen)
 	storeData(ptrOut, rData + halfArrayLen, halfArrayLen);
 }
 
-// blockNum must be power of 2 and cannot great than 8.
-// len indicate how many simd register lanes will be use per block.
+	// blockNum must be power of 2 and cannot great than 8.
+	// len indicate how many simd register lanes will be use per block.
+
 void inline loadSimdDataInitial(__m128 *rData, float **blocks, int blockNum,
 								int len)
 {
@@ -148,7 +154,8 @@ void inline loadSimdData(__m128 *rData, float **blocks, float **blockBound,
 	}
 }
 
-//TODO: recall the means of blockNum, may be there are several blocks of output?
+	// TODO: recall the means of blockNum, may be there are several blocks of output?
+
 void inline storeSimdData(__m128 *rData, float **output, int blockNum, int len,
 						  int start)
 {
@@ -160,7 +167,8 @@ void inline storeSimdData(__m128 *rData, float **output, int blockNum, int len,
 	}
 }
 
-// data length and block length both must be power of 2.
+	// data length and block length both must be power of 2.
+
 void mergeInRegister(DoubleBuffer<float> &data, size_t dataLen, size_t blockLen)
 {
 	size_t blockNum = dataLen / blockLen;
@@ -240,7 +248,8 @@ void inline swapFloat(float &a, float &b)
 	b = temp;
 }
 
-//TODO: modify to general mode, namely two array pointer, not only one data.
+	// TODO: modify to general mode, namely two array pointer, not only one data.
+
 int inline loadUnalignData(float *data, size_t &offsetA, size_t &offsetB,
 						   float *unalignData, int factor, bool start)
 {
@@ -284,12 +293,13 @@ int inline loadUnalignData(float *data, size_t &offsetA, size_t &offsetB,
 	return selector;
 }
 
-//If the trail of two lists is unalign because of median computation,
-//we need know where to "insert" the unalign data, to sort them correctly.
-//comparation is only done in one list, because the uValue comes from it and
-//must larger than all the previous keys in same list. offset is the trail of
-//the other list, the return value is number of elements that must be loaded
-//after unaligned data loaded.
+	// If the trail of two lists is unalign because of median computation,
+	// we need know where to "insert" the unalign data, to sort them correctly.
+	// comparation is only done in one list, because the uValue comes from it and
+	// must larger than all the previous keys in same list. offset is the trail of
+	// the other list, the return value is number of elements that must be loaded
+	// after unaligned data loaded.
+
 size_t getTrailPosition(float *data, size_t bOffset, size_t eOffset, float uValue,
 						int unitLen)
 {
@@ -307,9 +317,10 @@ size_t getTrailPosition(float *data, size_t bOffset, size_t eOffset, float uValu
 	return n;
 }
 
-//only used by 16 to 32 merge loop, namely only two lists merge to one list.
-//must be used as a mediate process, rData must be copied a half, and must be
-//emplified after this process complete.
+	// only used by 16 to 32 merge loop, namely only two lists merge to one list.
+	// must be used as a mediate process, rData must be copied a half, and must be
+	// emplified after this process complete.
+
 inline void simdMergeLoop2(__m128 *rData, float **dataOut, float **blocks,
 						   float **blockBound, int lanes, int unitLen)
 {
@@ -344,9 +355,10 @@ inline void simdMergeLoop2(__m128 *rData, float **dataOut, float **blocks,
 	}
 }
 
-//merge two lists into one list. the two list both reside in dataIn, the
-//elements that will be merged is bounded by offset arrays.
-//TODO: rename to simdMergeUnalign
+	// merge two lists into one list. the two list both reside in dataIn, the
+	// elements that will be merged is bounded by offset arrays.
+	// TODO: rename to simdMergeUnalign
+
 void simdMergeGeneral(float *dataIn, float *dataOut, size_t offsetA[2],
 					  size_t offsetB[2]) 
 {
@@ -553,8 +565,9 @@ void quantileInitial(DoubleBuffer<rsize_t> &quantile, const rsize_t *upperBound,
 	delete [] remain;
 }
 
-//TODO: think of the relation of quantile initial and quantile compute, to
-//simplify the program.
+ // TODO: think of the relation of quantile initial and quantile compute, to
+ // simplify the program.
+
 void quantileCompute(float *data, DoubleBuffer<rsize_t> &quantile,
 					 DoubleBuffer<rsize_t> &bound, const rsize_t *upperBound,
 					 rsize_t chunkNum, rsize_t quantileLen,
@@ -601,8 +614,9 @@ void quantileCompute(float *data, DoubleBuffer<rsize_t> &quantile,
 	}
 }
 
-//until now, the elements of first chunk in quantileset is correctly
-//initialized, no seperate quantile compute needed.
+	// until now, the elements of first chunk in quantileset is correctly
+	// initialized, no seperate quantile compute needed.
+
 void quantileSetCompute(DoubleBuffer<float> &data, size_t *quantileSet,
 						DoubleBuffer<size_t> &bound, const size_t *upperBound,
 						size_t chunkNum, size_t mergeStride, int setLen)
@@ -645,7 +659,9 @@ void quantileSetCompute(DoubleBuffer<float> &data, size_t *quantileSet,
 	  }
 	  }
 	  }*/
-	//int bulk = 16;
+	
+		// int bulk = 16;
+	
 	int bulk = setLen / 16;
 	if(setLen < 160) bulk = setLen / 8;
 #pragma omp parallel for schedule(dynamic)
