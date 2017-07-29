@@ -1,1 +1,1 @@
-Hybrid sorting algorithm on heterogeneous systems, using SSE/AVX instructions and openmp on CPU, cuda on GPU.
+Hybrid sorting algorithm on heterogeneous systems, using SSE and AVX instructions and openmp on CPU, cuda on GPU.
