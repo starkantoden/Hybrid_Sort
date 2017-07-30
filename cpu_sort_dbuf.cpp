@@ -805,8 +805,8 @@ void multiWayMergeGeneral(DoubleBuffer<float> &data, size_t dataLen,
 }
 
 void multiWayMergeHybrid(DoubleBuffer<float> &data, size_t dataLen,
-						 size_t *upperBound, size_t chunkNum, size_t mergeStride,
-						 size_t startOffset, size_t endOffset)
+			size_t *upperBound, size_t chunkNum, size_t mergeStride,
+			size_t startOffset, size_t endOffset)
 {
 	size_t *quantileStart = new size_t[chunkNum];
 	size_t *quantileEnd = new size_t[chunkNum];
@@ -888,8 +888,8 @@ void multiWayMergeMedian(DoubleBuffer<float> &data, size_t dataLen,
 			size_t listLen = quantile.buffers[1][j] - quantile.buffers[0][j];
 			size_t uLen = listLen & factornot;
 			size_t aLen = listLen - uLen;
-			//Proved that insert new elements in a vector the end of its
-			//iterator can be used.
+					// Proved that insert new elements in a vector the end of its
+					// iterator can be used.
 			if (aLen)
 				unalignVec.insert(unalignVec.end(),
 								  data.Current()+quantile.buffers[0][j]+uLen,
@@ -988,7 +988,9 @@ inline void multiWayMergeMedian(DoubleBuffer<float> &data, size_t dataLen,
 		end[j] = data.Current() + quantile.buffers[0][j] + uLen;
 	}
 	if (!unalignVec.empty()) insertBinarySortVec(unalignVec);
-	//if (!unalignVec.empty()) std::sort(unalignVec.begin(), unalignVec.end());
+	
+						// if (!unalignVec.empty()) std::sort(unalignVec.begin(), unalignVec.end());
+	
 	DoubleBuffer<float> block(tempBuffer,
 							  data.buffers[data.selector ^ 1] + startOffset);
 	int selector = getMergeStartBuffer(chunkNum, 1);
@@ -1050,13 +1052,13 @@ void inline simdMergeUnit(DoubleBuffer<float> &block, float **start, float **end
 {
 	size_t startOffset = start[sIdx] - block.buffers[selector];
 	size_t endOffset = end[sIdx + 1] - block.buffers[selector];
-	//std::cout << "offsets: " << startOffset << " " << endOffset << std::endl;
+					// std::cout << "offsets: " << startOffset << " " << endOffset << std::endl;
 	simdMergeAlign(block.buffers[selector ^ 1] + startOffset,
 				   &start[sIdx], &end[sIdx]);
 	start[tIdx] = block.buffers[selector ^ 1] + startOffset;
 	end[tIdx] = block.buffers[selector ^ 1] + endOffset;
 	++tIdx;
-	//std::cout << "simd merge unit complete.\n";
+					// std::cout << "simd merge unit complete.\n";
 }
 
 void multiWayMergeBitonic(DoubleBuffer<float> &data, size_t chunkNum,
@@ -1082,12 +1084,12 @@ void multiWayMergeBitonic(DoubleBuffer<float> &data, size_t chunkNum,
 			{
 				start[cLen] = data.Current() + quantile.buffers[0][j];
 				end[cLen] = data.Current() + quantile.buffers[0][j] + uLen;
-				//std::cout << end[cLen] - start[cLen] << " ";
+						// std::cout << end[cLen] - start[cLen] << " ";
 				++cLen;
 			}
 		}
 	}
-	//std::cout << "\ncLen: " << cLen << std::endl;
+						// std::cout << "\ncLen: " << cLen << std::endl;
 	if (!unalignVec.empty()) insertBinarySortVec(unalignVec);
 	if(cLen == 1)
 	{
@@ -1098,7 +1100,7 @@ void multiWayMergeBitonic(DoubleBuffer<float> &data, size_t chunkNum,
 			std::copy(unalignVec.begin(), unalignVec.end(), ptrOut);
 			unalignVec.clear();
 		}
-		//std::cout << "copied!\n";
+				// std::cout << "copied!\n";
 		return;
 	}
 	DoubleBuffer<float> block(tempBuffer,
@@ -1108,9 +1110,9 @@ void multiWayMergeBitonic(DoubleBuffer<float> &data, size_t chunkNum,
 	size_t cIdx = 0;
 	if(cLen & 1)
 	{
-		//In the next loop, other lists will be moved twice. once for load
-		//data, once for sort and move. So data In the odd one must be
-		//copied to correct address, equivalent to move twice.
+			// In the next loop, other lists will be moved twice. once for load
+			// data, once for sort and move. So data In the odd one must be
+			// copied to correct address, equivalent to move twice.
 		float *tempIn = block.buffers[selector ^ 1];
 		unalignMove(unalignVec, tempIn, start, end, cIdx);
 		++cIdx;
@@ -1197,7 +1199,7 @@ void singleThreadMerge(DoubleBuffer<float> &data, size_t dataLen)
 	__m128 rData[rArrayLen];
 	float *ptr = data.buffers[data.selector];
 	size_t loop = dataLen >> logBlockUnitLen; 
-	//cannot use pointer to pointer, because load data and store data coexist.
+				//	cannot use pointer to pointer, because load data and store data coexist.
 	for (size_t i = 0; i < loop; ++i)
 	{
 		loadData(ptr, rData, rArrayLen);
@@ -1221,7 +1223,7 @@ void updateSelectorGeneral(int &selector, size_t startLen, size_t dataLen)
 	if (_tzcnt_u64(blocks) & 1) selector ^= 1;
 }
 
-//TODO:may be generalized. now div must be power of 2.
+				// TODO:may be generalized. now div must be power of 2.
 void updateSelectorMultiWay(int &selector, size_t startLen, size_t chunkLen,
 							size_t dataLen)
 {
@@ -1254,9 +1256,9 @@ size_t lastPower2(size_t a)
 
 int getMergeStartBuffer(size_t chunkNum, int endBuffer)
 {
-	//this expression check whether chunknum is power of 2 or not,
-	//if not, then we need get the minimum number which is power of 2 and
-	// greater than it.
+		// this expression check whether chunknum is power of 2 or not,
+		// if not, then we need get the minimum number which is power of 2 and
+		// greater than it.
 	if(chunkNum & (chunkNum - 1))
 	{
 		if((64 - _lzcnt_u64(chunkNum)) & 1)
@@ -1294,16 +1296,16 @@ void mergeSortGeneral(DoubleBuffer<float> &data, size_t dataLen)
 	}while(sortedBlockNum > 1);
 }
 
-//medianA and medianB are both relative offset.
+		// medianA and medianB are both relative offset.
 void getMedian(float *data, size_t mergeLen, size_t chunkLen,
 			   size_t baseOffset, size_t &medianA, size_t &medianB)
 {
 	size_t startA = medianA, startB = medianB;
 	size_t minA, maxA;
-	//if chunkA is "shorter" then everything is ok, but if chunkA is "longer",
-	//then care must be taken to prevent medianB get a value that bigger
-	//than the bound of chunkB.
-	//the key is: is mergeLen - (chunkLen - medianB) positive or negative?
+		// if chunkA is "shorter" then everything is ok, but if chunkA is "longer",
+		// then care must be taken to prevent medianB get a value that bigger
+		// than the bound of chunkB.
+		// the key is: is mergeLen - (chunkLen - medianB) positive or negative?
 	maxA = std::min(medianA + mergeLen, chunkLen);
 	minA = medianA + mergeLen - std::min(mergeLen, (chunkLen - medianB));
 	float *blockA = data + baseOffset;
@@ -1333,8 +1335,8 @@ void multiThreadMergeGeneral(float *dataIn, float* dataOut, size_t dataLen,
 	int thdNumPerPair = blockNum / pairNum;
 	size_t *medianA = new size_t[medianNum];
 	size_t *medianB = new size_t[medianNum];
-	//may read much fewer elements than sort, so can compute all medians.
-	//#pragma omp parallel for schedule(dynamic, 8)
+		// may read much fewer elements than sort, so can compute all medians.
+		// #pragma omp parallel for schedule(dynamic, 8)
 	for (int j = 0; j < medianNum; ++j)
 	{
 		//length can greater than the length of a chunk.
@@ -1381,7 +1383,7 @@ void multiThreadMergeGeneral(float *dataIn, float* dataOut, size_t dataLen,
 	delete [] medianB;
 }
 
-//chunkNum should be exponent of 2, all chunks must be equal of length. 
+		// chunkNum should be exponent of 2, all chunks must be equal of length. 
 void multiThreadMerge(DoubleBuffer<float> &data, size_t dataLen, int chunkNum,
 					  size_t blockLen)
 {
@@ -1393,5 +1395,3 @@ void multiThreadMerge(DoubleBuffer<float> &data, size_t dataLen, int chunkNum,
 		data.selector ^= 1;
 	}
 }
-
- 
